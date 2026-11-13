@@ -1,0 +1,1199 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hierarkirator</title>
+<style>
+:root{
+  --bg:#f5f6f8; --panel:#fff; --text:#1d2330; --muted:#6b7385; --border:#dde1e8;
+  --accent:#2f6fde; --accent-soft:#e6eefc; --hover:#f3f6fb; --sel:#eaf1fe;
+  --danger:#c8382e; --guide:#d9dee6; --ctx:#9aa2b1; --ok:#2f9e65; --warn:#d99a00;
+  --font: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#14171c; --panel:#1c2027; --text:#e4e7ee; --muted:#9098a8; --border:#2e343e;
+    --accent:#6a9cff; --accent-soft:#24314a; --hover:#212631; --sel:#25314a;
+    --danger:#ff6b5e; --guide:#343b47; --ctx:#6e7686; --ok:#4cc488; --warn:#f0b429; }
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:var(--font);font-size:14px;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+header{background:var(--panel);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;flex-direction:column;gap:8px;z-index:5}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+h1{font-size:16px;margin:0 8px 0 0;font-weight:650}
+button{font:inherit;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:6px;padding:3px 10px;cursor:pointer;line-height:1.5}
+button:hover:not(:disabled){border-color:var(--accent)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+button:disabled{opacity:.4;cursor:default}
+input,select,textarea{font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:3px 8px}
+.sep{width:1px;height:22px;background:var(--border);margin:0 4px}
+.lbl{color:var(--muted);font-size:13px}
+.status{margin-left:auto;color:var(--muted);font-size:13px;display:flex;gap:8px;align-items:center}
+.status .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.status.ok .dot{background:var(--ok)} .status.dirty .dot{background:var(--warn)} .status.err .dot{background:var(--danger)}
+.status b{color:var(--text);font-weight:600}
+.newchip{border:1px dashed var(--accent);color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:3px 10px;cursor:grab;user-select:none}
+.newchip:active{cursor:grabbing}
+#search{width:180px}
+.chip{display:inline-flex;align-items:center;gap:3px;border-radius:10px;padding:0 8px;font-size:12px;line-height:20px;cursor:pointer;user-select:none;
+  background:hsl(var(--h) 70% 91%);color:hsl(var(--h) 45% 28%);border:1px solid transparent;white-space:nowrap}
+@media (prefers-color-scheme: dark){.chip{background:hsl(var(--h) 30% 24%);color:hsl(var(--h) 70% 84%)}}
+.chip.on{border-color:currentColor;box-shadow:0 0 0 1px currentColor inset;font-weight:600}
+.chip i{font-style:normal;opacity:.65}
+.chip .x{font-weight:400;opacity:.5;margin-left:2px}
+.chip .x:hover{opacity:1}
+#tagfilter{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+main{flex:1;overflow:auto;position:relative}
+#wrap{position:relative;width:max-content;min-width:100%;padding-bottom:140px}
+table{border-collapse:separate;border-spacing:0;table-layout:fixed}
+thead th{position:sticky;top:0;z-index:3;background:var(--panel);border-bottom:1px solid var(--border);text-align:left;font-weight:600;font-size:13px;
+  padding:6px 8px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none}
+thead th.fh{cursor:grab}
+thead th.fh:hover{color:var(--text)}
+thead th.drop-l{box-shadow:inset 3px 0 0 var(--accent)}
+thead th.drop-r{box-shadow:inset -3px 0 0 var(--accent)}
+.rz{position:absolute;right:0;top:0;bottom:0;width:6px;cursor:col-resize}
+.rz:hover{background:var(--accent-soft)}
+thead th{position:sticky}
+tbody td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;background:var(--panel)}
+tbody tr:hover td{background:var(--hover)}
+tbody tr.sel td{background:var(--sel)}
+tbody tr.ctx input.cell{color:var(--ctx)}
+tbody tr.dragging td{opacity:.35}
+td.hd{white-space:nowrap;color:var(--muted);font-size:12px;padding-left:4px}
+td.hd .hdw{display:flex;align-items:center;min-height:30px}
+.grip{cursor:grab;display:inline-flex;align-items:center;justify-content:center;width:30px;align-self:stretch;min-height:30px;
+  font-size:15px;opacity:.4;letter-spacing:-2px;user-select:none;border-radius:5px}
+tr:hover .grip{opacity:.95}
+.grip:hover{background:var(--accent-soft);color:var(--accent)}
+.grip:active,.dh:active{cursor:grabbing}
+.num{font-variant-numeric:tabular-nums;margin-left:2px}
+.ck{width:15px;height:15px;margin:0 6px 0 2px;cursor:pointer;accent-color:var(--accent);flex:none}
+tr.checked td.hd{box-shadow:inset 3px 0 0 var(--accent)}
+.seg-l{border-radius:6px 0 0 6px} .seg-r{border-radius:0 6px 6px 0;margin-left:-1px}
+#selCount{font-style:normal;opacity:.7}
+.tw{display:flex;align-items:stretch;min-height:30px}
+.dh{display:flex;align-items:center;flex:none;cursor:grab;border-radius:5px;user-select:none;background-repeat:no-repeat;
+  background-image:repeating-linear-gradient(90deg,transparent 0 10px,var(--guide) 10px 11px,transparent 11px 22px)}
+.dh:hover{background-color:var(--accent-soft)}
+.tg{border:none;background:none;padding:0;width:24px;flex:0 0 24px;text-align:center;color:var(--muted);cursor:pointer;line-height:30px}
+.tg.leaf{cursor:grab;opacity:.45;font-size:10px}
+.tg:hover:not(.leaf){color:var(--accent)}
+.cnt{font-size:11px;color:var(--muted);background:var(--accent-soft);border-radius:8px;padding:0 6px;margin-right:6px;flex:none}
+input.cell{border:none;border-radius:0;background:transparent;width:100%;padding:5px 6px;min-width:0;line-height:18px}
+input.cell:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--panel)}
+tr.lvl1 input.cell[data-first]{font-weight:600}
+td.tags{padding:2px 6px}
+td.tags .tagbox{display:flex;flex-wrap:wrap;gap:3px;align-items:center;min-height:26px}
+input.tagin{border:none;background:transparent;padding:2px 2px;width:70px;flex:1;min-width:50px;font-size:12px}
+input.tagin:focus{outline:none}
+td.act{white-space:nowrap;text-align:right;padding-right:6px}
+td.act button{padding:0 6px;font-size:12px;opacity:0;border-color:transparent;background:transparent}
+tr:hover td.act button, tr.sel td.act button{opacity:.8}
+td.act button:hover{opacity:1;border-color:var(--border)}
+td.act button[data-a=del]:hover{color:var(--danger)}
+#dropline{position:absolute;height:0;border-top:2px solid var(--accent);pointer-events:none;display:none;z-index:4}
+#dropline::before{content:"";position:absolute;left:-5px;top:-6px;width:8px;height:8px;border:2px solid var(--accent);border-radius:50%;background:var(--panel)}
+#dropline span{position:absolute;left:10px;top:-11px;font-size:11px;background:var(--accent);color:#fff;padding:1px 7px;border-radius:9px;white-space:nowrap}
+#empty{padding:30px;color:var(--muted)}
+footer{font-size:12px;color:var(--muted);padding:5px 14px;border-top:1px solid var(--border);background:var(--panel)}
+footer kbd{font-family:inherit;border:1px solid var(--border);border-radius:4px;padding:0 4px;font-size:11px}
+dialog{border:1px solid var(--border);border-radius:10px;background:var(--panel);color:var(--text);padding:18px 20px;max-width:min(860px,95vw);width:100%}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+dialog h2{margin:0 0 6px;font-size:17px}
+.hint{color:var(--muted);font-size:13px;margin:0 0 12px}
+#fieldList{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:4px}
+#fieldList li{display:flex;gap:6px;align-items:center;border:1px solid var(--border);border-radius:6px;padding:4px 6px;background:var(--panel)}
+#fieldList li.over-t{box-shadow:0 -3px 0 var(--accent)} #fieldList li.over-b{box-shadow:0 3px 0 var(--accent)}
+#fieldList li input{flex:1}
+#fieldList li .grip{opacity:.7}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.end{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 16px;margin-bottom:10px}
+.grid2 label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted)}
+.grid2 label.cb{flex-direction:row;align-items:center;gap:6px;color:var(--text)}
+#exOut{width:100%;height:340px;font-family:ui-monospace,Consolas,monospace;font-size:12px;white-space:pre;resize:vertical}
+#toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--panel);padding:8px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+#toast.show{opacity:.95}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>Hierarkirator</h1>
+    <button id="bNew" title="Ny lista">Ny</button>
+    <button id="bOpen" title="Öppna semikolonseparerad CSV">Öppna…</button>
+    <button id="bSave" title="Spara nu (Ctrl+S)">Spara</button>
+    <button id="bSaveAs">Spara som…</button>
+    <button id="bReconnect" class="primary" hidden></button>
+    <span class="sep"></span>
+    <button id="bUndo" title="Ångra (Ctrl+Z)">↶ Ångra</button>
+    <button id="bRedo" title="Gör om (Ctrl+Y)">↷ Gör om</button>
+    <span class="sep"></span>
+    <button id="bFields">Fält…</button>
+    <button id="bExport">Exportera…</button>
+    <div class="status" id="status"><span class="dot"></span><span id="statusText"></span><button id="bPerm" hidden>Ge skrivbehörighet</button></div>
+  </div>
+  <div class="bar">
+    <span class="newchip" id="newChip" draggable="true" title="Dra in i listan för att placera en ny rad – eller klicka för att lägga till under markerad rad">＋ Ny rad</span>
+    <span class="sep"></span>
+    <span class="lbl">Visa nivå:</span><span id="levels" class="bar"></span>
+    <span class="sep"></span>
+    <input id="search" type="search" placeholder="Sök…">
+    <span class="sep"></span>
+    <span class="lbl">Visa:</span>
+    <span class="bar" id="selbar" style="gap:0">
+      <button id="bShowAll" class="seg-l">Alla</button><button id="bShowSel" class="seg-r" title="Visa bara rader med ikryssad ruta (och raderna ovanför dem)">Bara valda <i id="selCount"></i></button>
+    </span>
+    <button id="bClearSel" title="Avmarkera alla valda rader">Avmarkera</button>
+    <span class="sep"></span>
+    <span class="lbl">Taggar:</span><span id="tagfilter"></span>
+    <span class="sep"></span>
+    <label class="lbl"><input type="checkbox" id="cbNum"> Numrering</label>
+  </div>
+</header>
+<main id="main">
+  <div id="wrap">
+    <table id="grid"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+    <div id="empty" hidden></div>
+    <div id="dropline"><span></span></div>
+  </div>
+</main>
+<footer>
+  Dra i <b>⋮⋮</b> eller i radens punkt/indrag för att flytta den (med underrader) – dra i sidled för att välja nivå.
+  <kbd>Enter</kbd> ny rad · <kbd>Ctrl+Enter</kbd> ny underrad · <kbd>Tab</kbd>/<kbd>Shift+Tab</kbd> (i första fältet) eller <kbd>Alt+→/←</kbd> nivå in/ut ·
+  <kbd>Alt+↑/↓</kbd> flytta · <kbd>↑/↓</kbd> byt rad · <kbd>Ctrl+S</kbd> spara · Autosparning var 10:e sekund.
+</footer>
+<datalist id="taglist"></datalist>
+<input type="file" id="fileInput" accept=".csv,text/csv" hidden>
+<div id="toast"></div>
+
+<dialog id="dlgFields">
+  <h2>Fält</h2>
+  <p class="hint">Fälten är kolumnerna i CSV-filen. Dra för att ändra ordning, skriv för att byta namn. Ordningen sparas i filen.</p>
+  <ul id="fieldList"></ul>
+  <div class="row"><input id="newField" placeholder="Nytt fält…"><button id="addField" class="primary">Lägg till fält</button></div>
+  <div class="row lbl">Kolumnnamn i CSV för nivå: <input id="levelName" size="10"> för taggar: <input id="tagName" size="10"></div>
+  <div class="end"><button id="closeFields">Stäng</button></div>
+</dialog>
+
+<dialog id="dlgExport">
+  <h2>Exportera</h2>
+  <div class="grid2">
+    <label>Format
+      <select id="exFormat">
+        <option value="xlsx">Excel (.xlsx) – grupperad per nivå</option>
+        <option value="md">Markdown – punktlista</option>
+        <option value="txt">Text med indrag (tabb)</option>
+        <option value="num">Numrerad disposition (1.2.3)</option>
+        <option value="html">HTML – nästlad lista</option>
+        <option value="json">JSON – nästlad</option>
+        <option value="opml">OPML (outliner / mindmap)</option>
+        <option value="cols">CSV – en kolumn per nivå</option>
+        <option value="csv">CSV – samma format som filen</option>
+      </select></label>
+    <label>Rubrikfält <select id="exLabel"></select></label>
+    <label>Rader
+      <select id="exScope">
+        <option value="all">Alla rader</option>
+        <option value="filtered">Filtrerade (oavsett hopfällning)</option>
+        <option value="visible">Precis som på skärmen</option>
+      </select></label>
+    <label class="cb"><input type="checkbox" id="exFields" checked> Ta med övriga fält</label>
+    <label class="cb"><input type="checkbox" id="exTags" checked> Ta med taggar</label>
+  </div>
+  <textarea id="exOut" readonly></textarea>
+  <div class="end"><button id="exCopy">Kopiera</button><button id="exDl" class="primary">Ladda ner</button><button id="closeExport">Stäng</button></div>
+</dialog>
+
+<script>
+'use strict';
+const INDENT = 22;
+const AUTOSAVE_MS = 10000;
+const LS_BACKUP = 'hierarkirator.backup', LS_PREFS = 'hierarkirator.prefs';
+const LEVEL_ALIASES = ['nivå','niva','level','nivå'];
+const TAG_ALIASES = ['taggar','tags','tag','tagg'];
+const $ = s => document.querySelector(s);
+const main = $('#main'), wrap = $('#wrap'), tbody = $('#tbody'), thead = $('#thead');
+
+let seq = 0;
+const newId = p => p + (++seq).toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const hue = t => { let h = 7; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 360; };
+
+/* ---------------- state ---------------- */
+let state;                 // {fields:[{id,name}], rows:[{id,level,values,tags,collapsed}], levelName, tagName}
+let fileHandle = null, fileName = null;
+let version = 0, savedVersion = 0, saving = false, lastSaved = null, saveError = null;
+let undoStack = [], redoStack = [], editSnap = null;
+let view = null, drag = null;
+const ui = { tags: new Set(), tagMode: 'any', withChildren: false, search: '', selected: null, onlyChecked: false, lastCk: null };
+let prefs = { numbering: true, widths: {}, tagWidth: 220 };
+
+function mkRow(level, values = {}, tags = []) { return { id: newId('r'), level, values, tags, collapsed: false }; }
+function defaultState() {
+  const f1 = { id: newId('f'), name: 'Namn' }, f2 = { id: newId('f'), name: 'Beskrivning' };
+  return { fields: [f1, f2], rows: [mkRow(1)], levelName: 'Nivå', tagName: 'Taggar' };
+}
+function idxOf(id) { return state.rows.findIndex(r => r.id === id); }
+function rowOfEl(el) { const tr = el.closest('tr'); return tr ? state.rows[idxOf(tr.dataset.id)] : null; }
+function subEnd(i) { const R = state.rows, l = R[i].level; let j = i + 1; while (j < R.length && R[j].level > l) j++; return j; }
+function normalize() { let p = 0; for (const r of state.rows) { r.level = clamp(parseInt(r.level) || 1, 1, p + 1); p = r.level; } }
+function fieldWidth(f, k) { return prefs.widths[f.name] || (k === 0 ? 320 : 200); }
+function dirty() { return version !== savedVersion; }
+
+/* ---------------- undo ---------------- */
+const snap = () => JSON.stringify({ fields: state.fields, rows: state.rows, levelName: state.levelName, tagName: state.tagName });
+function pushUndo(s = snap()) { undoStack.push(s); if (undoStack.length > 300) undoStack.shift(); redoStack = []; updateUndoBtns(); }
+function undo() { if (!undoStack.length) return; redoStack.push(snap()); Object.assign(state, JSON.parse(undoStack.pop())); editSnap = null; markDirty(); render(); }
+function redo() { if (!redoStack.length) return; undoStack.push(snap()); Object.assign(state, JSON.parse(redoStack.pop())); editSnap = null; markDirty(); render(); }
+function updateUndoBtns() { $('#bUndo').disabled = !undoStack.length; $('#bRedo').disabled = !redoStack.length; }
+function mutate(fn) { pushUndo(); const res = fn(); normalize(); markDirty(); render(); return res; }
+
+/* ---------------- CSV ---------------- */
+function detectDelim(text) {
+  const first = text.split(/\r?\n/, 1)[0] || '';
+  const c = d => first.split(d).length - 1;
+  if (c(';') > 0) return ';';
+  if (c('\t') > 0) return '\t';
+  if (c(',') > 0) return ',';
+  return ';';
+}
+function parseCSV(text, d = ';') {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const out = []; let row = [], f = '', q = false, i = 0; const n = text.length;
+  while (i < n) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { f += '"'; i += 2; continue; } q = false; i++; continue; }
+      f += c; i++; continue;
+    }
+    if (c === '"' && f === '') { q = true; i++; continue; }
+    if (c === d) { row.push(f); f = ''; i++; continue; }
+    if (c === '\r') { i++; continue; }
+    if (c === '\n') { row.push(f); out.push(row); row = []; f = ''; i++; continue; }
+    f += c; i++;
+  }
+  if (f !== '' || row.length) { row.push(f); out.push(row); }
+  return out.filter(r => r.some(v => v.trim() !== ''));
+}
+const csvCell = v => { v = String(v ?? ''); return /[;"\r\n]|^\s|\s$/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+function toCSV(list = state.rows) {
+  const lines = [[state.levelName, ...state.fields.map(f => f.name), state.tagName]];
+  for (const r of list) lines.push([r.level, ...state.fields.map(f => r.values[f.id] ?? ''), r.tags.join(', ')]);
+  return '﻿' + lines.map(l => l.map(csvCell).join(';')).join('\r\n') + '\r\n';
+}
+const splitTags = s => [...new Set(String(s || '').split(/[,|]/).map(t => t.trim()).filter(Boolean))];
+
+function stateFromCSV(text) {
+  const data = parseCSV(text, detectDelim(text));
+  if (!data.length) return defaultState();
+  const header = data[0].map(h => h.trim());
+  const li = header.findIndex(h => LEVEL_ALIASES.includes(h.toLowerCase()));
+  const ti = header.findIndex(h => TAG_ALIASES.includes(h.toLowerCase()));
+  const used = new Set();
+  const fields = [];
+  header.forEach((h, i) => {
+    if (i === li || i === ti) return;
+    let name = h || 'Fält ' + (i + 1), base = name, k = 2;
+    while (used.has(name.toLowerCase())) name = base + ' ' + k++;
+    used.add(name.toLowerCase());
+    fields.push({ id: newId('f'), name, col: i });
+  });
+  if (!fields.length) fields.push({ id: newId('f'), name: 'Namn', col: -1 });
+  const rows = data.slice(1).map(r => {
+    const values = {};
+    for (const f of fields) values[f.id] = f.col >= 0 ? (r[f.col] ?? '') : '';
+    return mkRow(li >= 0 ? parseInt(r[li]) || 1 : 1, values, ti >= 0 ? splitTags(r[ti]) : []);
+  });
+  fields.forEach(f => delete f.col);
+  return { fields, rows, levelName: li >= 0 ? header[li] : 'Nivå', tagName: ti >= 0 ? header[ti] : 'Taggar' };
+}
+async function decodeFile(file) {
+  const buf = await file.arrayBuffer();
+  let t = new TextDecoder('utf-8').decode(buf);
+  if (t.includes('�')) t = new TextDecoder('windows-1252').decode(buf);   // Excel-sparad ANSI-CSV
+  return t;
+}
+
+/* ---------------- view computation ---------------- */
+function filterActive() { return ui.onlyChecked || ui.tags.size > 0 || ui.search.trim() !== ''; }
+function selfMatch(r) {
+  if (ui.onlyChecked && !r.checked) return false;
+  if (ui.tags.size) {
+    const has = t => r.tags.includes(t);
+    if (!(ui.tagMode === 'all' ? [...ui.tags].every(has) : [...ui.tags].some(has))) return false;
+  }
+  const q = ui.search.trim().toLowerCase();
+  if (q) {
+    const hay = state.fields.map(f => r.values[f.id] || '').join('\u0001') + '\u0001' + r.tags.join('\u0001');
+    if (!hay.toLowerCase().includes(q)) return false;
+  }
+  return true;
+}
+function computeView(ignoreCollapse = false) {
+  const R = state.rows, n = R.length;
+  const parent = new Array(n), kids = new Array(n).fill(false), st = [];
+  for (let i = 0; i < n; i++) {
+    while (st.length && R[st[st.length - 1]].level >= R[i].level) st.pop();
+    parent[i] = st.length ? st[st.length - 1] : -1;
+    if (parent[i] >= 0) kids[parent[i]] = true;
+    st.push(i);
+  }
+  let show = null, direct = null;
+  if (filterActive()) {
+    direct = new Array(n); show = new Array(n).fill(false);
+    for (let i = 0; i < n; i++) direct[i] = selfMatch(R[i]) || (ui.withChildren && parent[i] >= 0 && direct[parent[i]]);
+    for (let i = 0; i < n; i++) if (direct[i]) { let p = i; while (p >= 0 && !show[p]) { show[p] = true; p = parent[p]; } }
+  }
+  const visible = []; let hide = Infinity;
+  for (let i = 0; i < n; i++) {
+    if (R[i].level > hide) continue;
+    hide = Infinity;
+    if (show && !show[i]) continue;
+    visible.push(i);
+    if (!ignoreCollapse && R[i].collapsed && kids[i]) hide = R[i].level;
+  }
+  const num = new Array(n), cnt = [];
+  for (let i = 0; i < n; i++) { const l = R[i].level; cnt.length = l; cnt[l - 1] = (cnt[l - 1] || 0) + 1; num[i] = cnt.join('.'); }
+  return { visible, parent, kids, show, direct, num };
+}
+
+/* ---------------- rendering ---------------- */
+function chip(t, removable) {
+  return `<span class="chip${ui.tags.has(t) ? ' on' : ''}" data-tag="${esc(t)}" style="--h:${hue(t)}">${esc(t)}${removable ? '<b class="x" title="Ta bort taggen">×</b>' : ''}</span>`;
+}
+function render(focus) {
+  const keep = focus || captureFocus();
+  view = computeView(false);
+  renderHead(); renderBody(); renderLevels(); renderTagFilter(); renderSelBar(); updateStatus(); updateUndoBtns();
+  restoreFocus(keep);
+}
+function renderHead() {
+  const F = state.fields;
+  const widths = [100, ...F.map(fieldWidth), prefs.tagWidth || 220, 96];
+  $('#cols').innerHTML = widths.map(w => `<col style="width:${w}px">`).join('');
+  $('#grid').style.width = widths.reduce((a, b) => a + b, 0) + 'px';
+  thead.innerHTML = `<tr><th style="padding-left:34px"><input type="checkbox" class="ck" id="ckAll" title="Välj / avmarkera alla synliga rader">${prefs.numbering ? '#' : ''}</th>${F.map(f =>
+    `<th class="fh" draggable="true" data-f="${f.id}" title="Dra för att byta ordning · dubbelklicka för fältinställningar">${esc(f.name)}<span class="rz" data-rz="${f.id}"></span></th>`).join('')
+    }<th>${esc(state.tagName)}<span class="rz" data-rz="__tags"></span></th><th style="text-align:right"><button id="bAddField" title="Lägg till fält" style="padding:0 7px">＋ Fält</button></th></tr>`;
+}
+function renderBody() {
+  const R = state.rows, F = state.fields, out = [];
+  for (const i of view.visible) {
+    const r = R[i], kids = view.kids[i], ctx = view.show && !view.direct[i];
+    const ind = (r.level - 1) * INDENT;
+    const tg = kids ? `<button class="tg" tabindex="-1" title="${r.collapsed ? 'Visa' : 'Dölj'} underrader">${r.collapsed ? '▸' : '▾'}</button>` : `<button class="tg leaf" tabindex="-1">●</button>`;
+    const cnt = kids && r.collapsed ? `<span class="cnt" title="Dolda underrader">${subEnd(i) - i - 1}</span>` : '';
+    const cells = F.map((f, k) => {
+      const inp = `<input class="cell" data-f="${f.id}"${k === 0 ? ' data-first' : ''} value="${esc(r.values[f.id] || '')}">`;
+      return k === 0
+        ? `<td><div class="tw"><span class="dh" draggable="true" title="Dra för att flytta (med underrader) – i sidled för att byta nivå" style="padding-left:${ind}px;background-size:${ind}px 100%">${tg}</span>${inp}${cnt}</div></td>`
+        : `<td>${inp}</td>`;
+    }).join('');
+    out.push(`<tr data-id="${r.id}" class="lvl${r.level}${ctx ? ' ctx' : ''}${ui.selected === r.id ? ' sel' : ''}${r.checked ? ' checked' : ''}">` +
+      `<td class="hd"><div class="hdw"><span class="grip" draggable="true" title="Dra för att flytta (med underrader)">⋮⋮</span><input type="checkbox" class="ck" tabindex="-1" title="Välj raden (Shift-klick väljer ett intervall)"${r.checked ? ' checked' : ''}><span class="num">${prefs.numbering ? view.num[i] : ''}</span></div></td>` +
+      cells +
+      `<td class="tags"><div class="tagbox">${r.tags.map(t => chip(t, true)).join('')}<input class="tagin" placeholder="+ tagg" list="taglist"></div></td>` +
+      `<td class="act"><button data-a="sib" title="Ny rad på samma nivå (Enter)">＋</button><button data-a="child" title="Ny underrad (Ctrl+Enter)">↳</button><button data-a="del" title="Ta bort rad">✕</button></td></tr>`);
+  }
+  tbody.innerHTML = out.join('');
+  const empty = $('#empty');
+  if (!R.length) { empty.hidden = false; empty.innerHTML = 'Listan är tom. <button id="bFirst" class="primary">Lägg till första raden</button> eller dra in <b>＋ Ny rad</b> hit.'; }
+  else if (!view.visible.length) { empty.hidden = false; empty.textContent = ui.onlyChecked && !R.some(r => r.checked) ? 'Inga rader är valda – klicka på ”Alla” och kryssa i rader.' : 'Inga rader matchar filtret.'; }
+  else empty.hidden = true;
+}
+function renderLevels() {
+  const max = Math.max(1, ...state.rows.map(r => r.level));
+  let h = '';
+  for (let l = 1; l <= Math.min(max, 12); l++) h += `<button data-lv="${l}" title="Visa allt till och med nivå ${l}">${l}</button>`;
+  $('#levels').innerHTML = h + `<button data-lv="all">Alla</button>`;
+}
+function renderSelBar() {
+  const n = state.rows.reduce((a, r) => a + (r.checked ? 1 : 0), 0);
+  $('#selCount').textContent = `(${n})`;
+  $('#bShowAll').classList.toggle('on', !ui.onlyChecked);
+  $('#bShowSel').classList.toggle('on', ui.onlyChecked);
+  $('#bClearSel').disabled = !n;
+  const ck = $('#ckAll'); if (!ck) return;
+  const vis = view.visible.map(i => state.rows[i]), m = vis.filter(r => r.checked).length;
+  ck.checked = vis.length > 0 && m === vis.length;
+  ck.indeterminate = m > 0 && m < vis.length;
+}
+function setChecked(rows, on) { for (const r of rows) r.checked = on; backupLocal(); render(); }
+function renderTagFilter() {
+  const counts = new Map();
+  for (const r of state.rows) for (const t of r.tags) counts.set(t, (counts.get(t) || 0) + 1);
+  for (const t of [...ui.tags]) if (!counts.has(t)) ui.tags.delete(t);
+  const tags = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'sv'));
+  $('#taglist').innerHTML = tags.map(t => `<option value="${esc(t)}">`).join('');
+  if (!tags.length) { $('#tagfilter').innerHTML = '<span class="lbl">(inga ännu)</span>'; return; }
+  $('#tagfilter').innerHTML = tags.map(t => `<span class="chip${ui.tags.has(t) ? ' on' : ''}" data-ftag="${esc(t)}" style="--h:${hue(t)}">${esc(t)} <i>${counts.get(t)}</i></span>`).join('') +
+    (ui.tags.size > 1 ? `<button id="bTagMode" title="Hur flera valda taggar kombineras">${ui.tagMode === 'all' ? 'Alla valda' : 'Någon vald'}</button>` : '') +
+    (filterActive() ? `<label class="lbl"><input type="checkbox" id="cbKids"${ui.withChildren ? ' checked' : ''}> inkl. underrader</label><button id="bClearF">Rensa filter</button>` : '');
+}
+function captureFocus() {
+  const a = document.activeElement;
+  if (!a || !tbody.contains(a)) return null;
+  const tr = a.closest('tr');
+  return { id: tr.dataset.id, f: a.dataset.f || null, tagin: a.classList.contains('tagin'), s: a.selectionStart, e: a.selectionEnd };
+}
+function restoreFocus(k) {
+  if (!k) return;
+  const tr = tbody.querySelector(`tr[data-id="${k.id}"]`);
+  if (!tr) return;
+  const el = k.tagin ? tr.querySelector('.tagin') : tr.querySelector(k.f ? `input.cell[data-f="${k.f}"]` : 'input.cell');
+  if (!el) return;
+  el.focus({ preventScroll: false });
+  if (k.s != null) try { el.setSelectionRange(k.s, k.e); } catch {}
+  else if (k.end) { const n = el.value.length; el.setSelectionRange(n, n); }
+}
+function selectRow(id) {
+  ui.selected = id;
+  for (const tr of tbody.querySelectorAll('tr.sel')) tr.classList.remove('sel');
+  const tr = tbody.querySelector(`tr[data-id="${id}"]`); if (tr) tr.classList.add('sel');
+}
+
+/* ---------------- row operations ---------------- */
+function expandAncestors(i) {
+  const R = state.rows; let l = R[i].level;
+  for (let j = i - 1; j >= 0 && l > 1; j--) if (R[j].level < l) { R[j].collapsed = false; l = R[j].level; }
+}
+function addRowAt(i, mode, f) {   // mode: 'sib' | 'child' | 'end'
+  const r = mutate(() => {
+    const R = state.rows;
+    if (mode === 'end' || i < 0) { const n = mkRow(1); R.push(n); return n; }
+    const n = mkRow(mode === 'child' ? R[i].level + 1 : R[i].level);
+    if (mode === 'child') R[i].collapsed = false;
+    R.splice(subEnd(i), 0, n);
+    expandAncestors(R.indexOf(n));
+    return n;
+  });
+  selectRow(r.id);
+  restoreFocus({ id: r.id, f: f || state.fields[0].id });
+  hiddenByFilterNote(r.id);
+}
+function deleteRow(i) {
+  const R = state.rows, e = subEnd(i), n = e - i - 1;
+  if (n > 0 && !confirm(`Ta bort raden och dess ${n} underrader?`)) return;
+  const prev = view.visible[view.visible.indexOf(i) - 1];
+  const prevId = prev != null ? R[prev].id : null;
+  mutate(() => R.splice(i, e - i));
+  if (prevId) restoreFocus({ id: prevId, f: state.fields[0].id, end: true });
+}
+function indent(i) {
+  const R = state.rows;
+  if (i <= 0 || R[i - 1].level < R[i].level) return toast('Raden saknar ett syskon ovanför att flytta in under');
+  mutate(() => { const e = subEnd(i); for (let k = i; k < e; k++) R[k].level++; expandAncestors(i); });
+}
+function outdent(i) {
+  const R = state.rows;
+  if (R[i].level === 1) return;
+  mutate(() => {
+    let p = i - 1; while (R[p].level >= R[i].level) p--;      // föräldern
+    const blk = R.splice(i, subEnd(i) - i);
+    blk.forEach(r => r.level--);
+    R.splice(subEnd(p), 0, ...blk);                         // placeras direkt efter förälderns gren
+  });
+}
+function moveUp(i) {
+  const R = state.rows; let j = i - 1;
+  while (j >= 0 && R[j].level > R[i].level) j--;
+  if (j < 0 || R[j].level < R[i].level) return;
+  mutate(() => { const blk = R.splice(i, subEnd(i) - i); R.splice(j, 0, ...blk); });
+}
+function moveDown(i) {
+  const R = state.rows, e = subEnd(i);
+  if (e >= R.length || R[e].level !== R[i].level) return;
+  mutate(() => { const e2 = subEnd(e); const nxt = R.splice(e, e2 - e); R.splice(i, 0, ...nxt); });
+}
+function setLevelView(lv) {
+  const R = state.rows;
+  R.forEach((r, i) => { const kids = i + 1 < R.length && R[i + 1].level > r.level; r.collapsed = lv !== 'all' && kids && r.level >= lv; });
+  backupLocal(); render();
+}
+function addTags(r, text) {
+  const add = splitTags(text).filter(t => !r.tags.includes(t));
+  if (!add.length) return false;
+  mutate(() => r.tags.push(...add));
+  return true;
+}
+function hiddenByFilterNote(id) {
+  if (filterActive() && !tbody.querySelector(`tr[data-id="${id}"]`)) toast('Raden är dold av det aktiva filtret');
+}
+
+/* ---------------- tbody events ---------------- */
+tbody.addEventListener('focusin', e => {
+  const t = e.target;
+  if (t.matches('input.cell, input.tagin')) { editSnap = snap(); selectRow(t.closest('tr').dataset.id); }
+});
+tbody.addEventListener('focusout', e => {
+  const t = e.target;
+  editSnap = null;
+  if (t.matches('input.tagin') && t.value.trim()) { const r = rowOfEl(t); const v = t.value; t.value = ''; if (r) setTimeout(() => addTags(r, v)); }
+});
+tbody.addEventListener('input', e => {
+  const t = e.target;
+  if (!t.matches('input.cell')) return;
+  if (editSnap) { pushUndo(editSnap); editSnap = null; }
+  const r = rowOfEl(t); if (!r) return;
+  r.values[t.dataset.f] = t.value;
+  markDirty();
+});
+tbody.addEventListener('click', e => {
+  const t = e.target, tr = t.closest('tr'); if (!tr) return;
+  const i = idxOf(tr.dataset.id), r = state.rows[i];
+  if (t.classList.contains('ck')) {
+    const vis = view.visible, pos = vis.indexOf(i), last = ui.lastCk ? vis.indexOf(idxOf(ui.lastCk)) : -1;
+    if (e.shiftKey && last >= 0) setChecked(vis.slice(Math.min(pos, last), Math.max(pos, last) + 1).map(k => state.rows[k]), t.checked);
+    else setChecked([r], t.checked);
+    ui.lastCk = r.id;
+    return;
+  }
+  if (t.closest('.tg') && !t.closest('.tg').classList.contains('leaf')) { r.collapsed = !r.collapsed; backupLocal(); render(); return; }
+  const a = t.closest('[data-a]');
+  if (a) {
+    if (a.dataset.a === 'sib') addRowAt(i, 'sib');
+    else if (a.dataset.a === 'child') addRowAt(i, 'child');
+    else deleteRow(i);
+    return;
+  }
+  if (t.classList.contains('x')) { const tag = t.parentElement.dataset.tag; mutate(() => r.tags = r.tags.filter(x => x !== tag)); return; }
+  const c = t.closest('.chip');
+  if (c) { toggleTagFilter(c.dataset.tag); return; }
+  if (t.closest('td.tags')) tr.querySelector('.tagin').focus();
+  selectRow(r.id);
+});
+tbody.addEventListener('keydown', e => {
+  const t = e.target, tr = t.closest('tr'); if (!tr) return;
+  const i = idxOf(tr.dataset.id), f = t.dataset.f;
+  if (t.matches('input.tagin')) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const v = t.value; t.value = '';
+      if (v.trim()) { addTags(state.rows[i], v); restoreFocus({ id: tr.dataset.id, tagin: true }); }
+    } else if (e.key === 'Backspace' && !t.value && state.rows[i].tags.length) {
+      mutate(() => state.rows[i].tags.pop()); restoreFocus({ id: tr.dataset.id, tagin: true });
+    }
+    return;
+  }
+  if (!t.matches('input.cell')) return;
+  const isFirst = t.hasAttribute('data-first');
+  if (e.key === 'Enter') { e.preventDefault(); addRowAt(i, (e.ctrlKey || e.metaKey) ? 'child' : 'sib', f); return; }
+  if (e.key === 'Tab' && isFirst && !e.ctrlKey && !e.altKey) { e.preventDefault(); e.shiftKey ? outdent(i) : indent(i); return; }
+  if (e.altKey && !e.ctrlKey) {
+    const fn = { ArrowRight: indent, ArrowLeft: outdent, ArrowUp: moveUp, ArrowDown: moveDown }[e.key];
+    if (fn) { e.preventDefault(); fn(i); return; }
+  }
+  if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.altKey && !e.ctrlKey && !e.shiftKey) {
+    const other = e.key === 'ArrowUp' ? tr.previousElementSibling : tr.nextElementSibling;
+    if (other) { e.preventDefault(); const el = other.querySelector(`input.cell[data-f="${f}"]`); el.focus(); el.select(); }
+  }
+});
+
+/* ---------------- drag & drop: rows ---------------- */
+tbody.addEventListener('dragstart', e => {
+  const g = e.target.closest && e.target.closest('.grip, .dh'); if (!g) return;
+  const tr = g.closest('tr'), i = idxOf(tr.dataset.id), end = subEnd(i);
+  drag = { kind: 'row', ids: new Set(state.rows.slice(i, end).map(r => r.id)), origLevel: state.rows[i].level, startX: e.clientX };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('application/x-hierarkirator', tr.dataset.id);
+  e.dataTransfer.setDragImage(tr, 16, 14);
+  requestAnimationFrame(() => { for (const r of tbody.rows) if (drag && drag.ids.has(r.dataset.id)) r.classList.add('dragging'); });
+});
+$('#newChip').addEventListener('dragstart', e => {
+  drag = { kind: 'new', ids: new Set() };
+  e.dataTransfer.effectAllowed = 'copyMove';
+  e.dataTransfer.setData('application/x-hierarkirator', 'new');
+});
+$('#newChip').addEventListener('click', () => {
+  const i = ui.selected ? idxOf(ui.selected) : -1;
+  addRowAt(i, i >= 0 ? 'sib' : 'end');
+});
+function treeLeft() {   // vänsterkant för trädkolumnens innehåll, relativt #wrap
+  const th = thead.querySelector('th.fh');
+  return th.getBoundingClientRect().left - wrap.getBoundingClientRect().left;
+}
+function computeTarget(e) {
+  const trs = tbody.rows, n = trs.length, R = state.rows;
+  let lo = 0, hi = n;
+  while (lo < hi) { const m = (lo + hi) >> 1, rc = trs[m].getBoundingClientRect(); if (e.clientY < rc.top + rc.height / 2) hi = m; else lo = m + 1; }
+  const gap = lo;
+  let a = gap - 1; while (a >= 0 && drag.ids.has(trs[a].dataset.id)) a--;
+  let b = gap; while (b < n && drag.ids.has(trs[b].dataset.id)) b++;
+  const A = a >= 0 ? R[idxOf(trs[a].dataset.id)] : null;
+  const B = b < n ? R[idxOf(trs[b].dataset.id)] : null;
+  const rest = R.filter(r => !drag.ids.has(r.id));
+  const idx = B ? rest.indexOf(B) : rest.length;
+  const prev = rest[idx - 1], next = rest[idx];
+  let max = prev ? prev.level + 1 : 1; max = A ? Math.min(max, A.level + 1) : Math.min(max, 1);
+  let min = next ? Math.max(1, next.level - 1) : 1;
+  if (min > max) max = min;
+  const left = treeLeft();
+  let L = drag.kind === 'row'
+    ? drag.origLevel + Math.round((e.clientX - drag.startX) / INDENT)
+    : Math.floor((e.clientX - wrap.getBoundingClientRect().left - left - 24) / INDENT) + 1;
+  L = clamp(L, min, max);
+  let parent = null;
+  for (let j = idx - 1; j >= 0; j--) if (rest[j].level < L) { parent = rest[j]; break; }
+  const wr = wrap.getBoundingClientRect();
+  let y;
+  if (n === 0) y = thead.getBoundingClientRect().bottom;
+  else if (gap < n) y = trs[gap].getBoundingClientRect().top;
+  else y = trs[n - 1].getBoundingClientRect().bottom;
+  return { L, bId: B ? B.id : null, parentName: parent ? (parent.values[state.fields[0].id] || '(tom rad)') : null,
+           y: y - wr.top, x: left + 24 + (L - 1) * INDENT };
+}
+function showDropline(t) {
+  const dl = $('#dropline');
+  dl.style.display = 'block';
+  dl.style.top = t.y + 'px';
+  dl.style.left = t.x + 'px';
+  dl.style.width = Math.max(120, wrap.scrollWidth - t.x - 20) + 'px';
+  dl.firstElementChild.textContent = `Nivå ${t.L}` + (t.parentName ? ` · under ”${t.parentName.slice(0, 40)}”` : '');
+}
+function endDrag() {
+  drag = null;
+  $('#dropline').style.display = 'none';
+  for (const r of tbody.querySelectorAll('tr.dragging')) r.classList.remove('dragging');
+  for (const th of thead.querySelectorAll('.drop-l,.drop-r')) th.classList.remove('drop-l', 'drop-r');
+}
+main.addEventListener('dragover', e => {
+  if (!drag || drag.kind === 'field') return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = drag.kind === 'new' ? 'copy' : 'move';
+  const mr = main.getBoundingClientRect();
+  if (e.clientY < mr.top + 60) main.scrollTop -= 14; else if (e.clientY > mr.bottom - 40) main.scrollTop += 14;
+  drag.target = computeTarget(e);
+  showDropline(drag.target);
+});
+main.addEventListener('dragleave', e => { if (drag && !main.contains(e.relatedTarget)) $('#dropline').style.display = 'none'; });
+main.addEventListener('drop', e => {
+  if (!drag || drag.kind === 'field') return;
+  e.preventDefault();
+  const t = drag.target || computeTarget(e), kind = drag.kind, ids = drag.ids;
+  endDrag();
+  let moved;
+  mutate(() => {
+    const R = state.rows;
+    const blk = kind === 'new' ? [mkRow(t.L)] : R.filter(r => ids.has(r.id));
+    if (!blk.length) return;
+    const d = t.L - blk[0].level; blk.forEach(r => r.level += d);
+    const rest = R.filter(r => !ids.has(r.id));
+    const idx = t.bId ? rest.findIndex(r => r.id === t.bId) : rest.length;
+    rest.splice(idx < 0 ? rest.length : idx, 0, ...blk);
+    state.rows = rest;
+    expandAncestors(idx < 0 ? rest.length - blk.length : idx);
+    moved = blk[0];
+  });
+  if (!moved) return;
+  selectRow(moved.id);
+  if (kind === 'new') restoreFocus({ id: moved.id, f: state.fields[0].id });
+  hiddenByFilterNote(moved.id);
+});
+document.addEventListener('dragend', endDrag);
+
+/* ---------------- header: field reorder + resize ---------------- */
+thead.addEventListener('dragstart', e => {
+  const th = e.target.closest && e.target.closest('th.fh'); if (!th) return;
+  drag = { kind: 'field', id: th.dataset.f };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('application/x-hierarkirator', 'field');
+});
+thead.addEventListener('dragover', e => {
+  if (!drag || drag.kind !== 'field') return;
+  const th = e.target.closest('th.fh'); if (!th) return;
+  e.preventDefault();
+  for (const x of thead.querySelectorAll('.drop-l,.drop-r')) x.classList.remove('drop-l', 'drop-r');
+  const rc = th.getBoundingClientRect();
+  th.classList.add(e.clientX < rc.left + rc.width / 2 ? 'drop-l' : 'drop-r');
+});
+thead.addEventListener('drop', e => {
+  if (!drag || drag.kind !== 'field') return;
+  const th = e.target.closest('th.fh'); if (!th) return endDrag();
+  e.preventDefault();
+  const after = th.classList.contains('drop-r'), from = drag.id, to = th.dataset.f;
+  endDrag();
+  moveField(from, to, after);
+});
+thead.addEventListener('dblclick', e => { if (e.target.closest('th.fh')) openFields(); });
+thead.addEventListener('click', e => {
+  if (e.target.closest('#bAddField')) { openFields(); $('#newField').focus(); }
+  if (e.target.id === 'ckAll') setChecked(view.visible.map(i => state.rows[i]), e.target.checked);
+});
+$('#bShowAll').onclick = () => { ui.onlyChecked = false; render(); };
+$('#bShowSel').onclick = () => { ui.onlyChecked = true; render(); };
+$('#bClearSel').onclick = () => setChecked(state.rows, false);
+function moveField(fromId, toId, after) {
+  if (fromId === toId) return;
+  mutate(() => {
+    const F = state.fields, f = F.splice(F.findIndex(x => x.id === fromId), 1)[0];
+    let k = F.findIndex(x => x.id === toId); if (after) k++;
+    F.splice(k, 0, f);
+  });
+  if ($('#dlgFields').open) renderFieldList();
+}
+document.addEventListener('mousedown', e => {
+  const rz = e.target.closest && e.target.closest('.rz'); if (!rz) return;
+  e.preventDefault(); e.stopPropagation();
+  const key = rz.dataset.rz, f = state.fields.find(x => x.id === key);
+  const k = f ? state.fields.indexOf(f) : -1;
+  const w0 = f ? fieldWidth(f, k) : (prefs.tagWidth || 220), x0 = e.clientX;
+  const col = $('#cols').children[f ? k + 1 : state.fields.length + 1];
+  const mv = ev => {
+    const w = Math.max(60, w0 + ev.clientX - x0);
+    col.style.width = w + 'px';
+    if (f) prefs.widths[f.name] = w; else prefs.tagWidth = w;
+    $('#grid').style.width = [...$('#cols').children].reduce((a, c) => a + parseInt(c.style.width), 0) + 'px';
+  };
+  const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); savePrefs(); };
+  document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+}, true);
+
+/* ---------------- toolbar ---------------- */
+$('#levels').addEventListener('click', e => { const b = e.target.closest('[data-lv]'); if (b) setLevelView(b.dataset.lv === 'all' ? 'all' : +b.dataset.lv); });
+function toggleTagFilter(t) { ui.tags.has(t) ? ui.tags.delete(t) : ui.tags.add(t); render(); }
+$('#tagfilter').addEventListener('click', e => {
+  const c = e.target.closest('[data-ftag]'); if (c) return toggleTagFilter(c.dataset.ftag);
+  if (e.target.id === 'bTagMode') { ui.tagMode = ui.tagMode === 'all' ? 'any' : 'all'; render(); }
+  if (e.target.id === 'bClearF') { ui.tags.clear(); ui.search = ''; ui.onlyChecked = false; $('#search').value = ''; render(); }
+});
+$('#tagfilter').addEventListener('change', e => { if (e.target.id === 'cbKids') { ui.withChildren = e.target.checked; render(); } });
+let searchT;
+$('#search').addEventListener('input', e => { clearTimeout(searchT); searchT = setTimeout(() => { ui.search = e.target.value; render(); }, 150); });
+$('#cbNum').addEventListener('change', e => { prefs.numbering = e.target.checked; savePrefs(); render(); });
+$('#wrap').addEventListener('click', e => { if (e.target.id === 'bFirst') addRowAt(-1, 'end'); });
+$('#bUndo').onclick = undo; $('#bRedo').onclick = redo;
+document.addEventListener('keydown', e => {
+  const mod = e.ctrlKey || e.metaKey;
+  if (!mod) return;
+  const k = e.key.toLowerCase();
+  if (k === 's') { e.preventDefault(); fileHandle ? save(true) : saveAs(); }
+  else if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+});
+
+/* ---------------- files & saving ---------------- */
+const FS = 'showOpenFilePicker' in window;
+const pickerTypes = [{ description: 'CSV (semikolonseparerad)', accept: { 'text/csv': ['.csv'] } }];
+function loadState(s, name) {
+  state = s; normalize();
+  fileName = name; undoStack = []; redoStack = []; version = savedVersion = 0; saveError = null;
+  ui.tags.clear(); ui.search = ''; ui.selected = null; $('#search').value = '';
+  backupLocal(); render();
+}
+async function openFile() {
+  if (!FS) return $('#fileInput').click();
+  try {
+    const [h] = await showOpenFilePicker({ types: pickerTypes, multiple: false });
+    const text = await decodeFile(await h.getFile());
+    fileHandle = h;
+    loadState(stateFromCSV(text), h.name);
+    storeHandle(h);
+    await ensureWrite(true);
+  } catch (e) { if (e.name !== 'AbortError') toast('Kunde inte öppna filen: ' + e.message); }
+}
+$('#fileInput').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  fileHandle = null;
+  loadState(stateFromCSV(await decodeFile(f)), f.name);
+  e.target.value = '';
+  toast('Webbläsaren saknar direkt filåtkomst – "Spara" laddar ner filen. Använd Chrome/Edge för autosparning.');
+});
+async function ensureWrite(ask) {
+  if (!fileHandle) return false;
+  const o = { mode: 'readwrite' };
+  if (await fileHandle.queryPermission(o) === 'granted') return true;
+  if (!ask) return false;
+  try { return await fileHandle.requestPermission(o) === 'granted'; } catch { return false; }
+}
+async function save(force) {
+  if (!fileHandle) { if (force) download(fileName || 'lista.csv', toCSV(), 'text/csv'); return; }
+  if (saving || (!force && !dirty())) return;
+  saving = true; const v = version; updateStatus();
+  try {
+    if (!await ensureWrite(force)) throw Object.assign(new Error('Skrivbehörighet saknas'), { perm: true });
+    const w = await fileHandle.createWritable();
+    await w.write(new Blob([toCSV()], { type: 'text/csv;charset=utf-8' }));
+    await w.close();
+    savedVersion = v; lastSaved = new Date(); saveError = null;
+  } catch (e) { saveError = e; }
+  finally { saving = false; backupLocal(); updateStatus(); }
+}
+async function saveAs() {
+  if (!FS) { download(fileName || 'lista.csv', toCSV(), 'text/csv'); savedVersion = version; updateStatus(); return; }
+  try {
+    const h = await showSaveFilePicker({ suggestedName: fileName || 'lista.csv', types: pickerTypes });
+    fileHandle = h; fileName = h.name; storeHandle(h);
+    await save(true);
+  } catch (e) { if (e.name !== 'AbortError') toast('Kunde inte spara: ' + e.message); }
+}
+async function newList() {
+  if (state.rows.some(r => Object.values(r.values).some(Boolean)) && !confirm('Starta en ny, tom lista? (Den nuvarande filen påverkas inte.)')) return;
+  fileHandle = null;
+  loadState(defaultState(), null);
+  if (FS) await saveAs();
+}
+$('#bNew').onclick = newList;
+$('#bOpen').onclick = openFile;
+$('#bSave').onclick = () => fileHandle ? save(true) : saveAs();
+$('#bSaveAs').onclick = saveAs;
+$('#bPerm').onclick = () => save(true);
+setInterval(() => { if (dirty()) save(false); }, AUTOSAVE_MS);
+document.addEventListener('visibilitychange', () => { if (document.hidden && dirty()) save(false); });
+window.addEventListener('beforeunload', e => { if (dirty() && fileHandle) { e.preventDefault(); e.returnValue = ''; } });
+
+function markDirty() { version++; backupLocal(); updateStatus(); }
+let statusT;
+function updateStatus() {
+  const st = $('#status'), tx = $('#statusText');
+  st.className = 'status';
+  $('#bPerm').hidden = true;
+  const name = fileName ? `<b>${esc(fileName)}</b> · ` : '';
+  const rows = `${state.rows.length} rader`;
+  if (saveError) {
+    st.classList.add('err');
+    tx.innerHTML = `${name}Kunde inte spara: ${esc(saveError.message)}`;
+    $('#bPerm').hidden = false;
+    $('#bPerm').textContent = saveError.perm ? 'Ge skrivbehörighet' : 'Försök igen';
+  } else if (!fileHandle) {
+    st.classList.add('dirty');
+    tx.innerHTML = `${name}${rows} · ${FS ? 'ingen fil kopplad – välj <i>Spara som…</i> för autosparning' : 'sparas bara i webbläsaren tills du klickar Spara'}`;
+  } else if (saving) {
+    tx.innerHTML = `${name}Sparar…`;
+  } else if (dirty()) {
+    st.classList.add('dirty');
+    tx.innerHTML = `${name}${rows} · osparade ändringar (autosparas)`;
+  } else {
+    st.classList.add('ok');
+    tx.innerHTML = `${name}${rows} · sparad ${lastSaved ? lastSaved.toLocaleTimeString('sv-SE') : ''}`;
+  }
+}
+function download(name, text, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: typeof text === 'string' ? mime + ';charset=utf-8' : mime }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---- browser backup + remembered file handle ---- */
+let bkT;
+function backupLocal() {
+  clearTimeout(bkT);
+  bkT = setTimeout(() => { try { localStorage.setItem(LS_BACKUP, JSON.stringify({ state, fileName, dirty: dirty() })); } catch {} }, 600);
+}
+function savePrefs() { try { localStorage.setItem(LS_PREFS, JSON.stringify(prefs)); } catch {} }
+function idb() {
+  return new Promise((res, rej) => { const r = indexedDB.open('hierarkirator', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+}
+async function storeHandle(h) { try { const db = await idb(); db.transaction('kv', 'readwrite').objectStore('kv').put(h, 'handle'); } catch {} $('#bReconnect').hidden = true; }
+async function loadHandle() {
+  try { const db = await idb(); return await new Promise(res => { const q = db.transaction('kv').objectStore('kv').get('handle'); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); } catch { return null; }
+}
+
+/* ---------------- fields dialog ---------------- */
+function openFields() { renderFieldList(); $('#levelName').value = state.levelName; $('#tagName').value = state.tagName; $('#dlgFields').showModal(); }
+function renderFieldList() {
+  $('#fieldList').innerHTML = state.fields.map((f, k) => `<li draggable="true" data-f="${f.id}"><span class="grip">⋮⋮</span>
+    <input class="fname" value="${esc(f.name)}"><button data-m="up" ${k === 0 ? 'disabled' : ''}>↑</button><button data-m="down" ${k === state.fields.length - 1 ? 'disabled' : ''}>↓</button>
+    <button data-m="del" title="Ta bort fältet" ${state.fields.length < 2 ? 'disabled' : ''}>✕</button></li>`).join('');
+}
+function nameTaken(name, exceptId) {
+  const n = name.trim().toLowerCase();
+  return state.fields.some(f => f.id !== exceptId && f.name.toLowerCase() === n) || n === state.levelName.toLowerCase() || n === state.tagName.toLowerCase();
+}
+$('#addField').onclick = () => {
+  const inp = $('#newField'), name = inp.value.trim();
+  if (!name) return inp.focus();
+  if (nameTaken(name)) return toast('Det finns redan en kolumn med det namnet');
+  mutate(() => state.fields.push({ id: newId('f'), name }));
+  inp.value = ''; renderFieldList(); inp.focus();
+};
+$('#newField').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#addField').click(); } });
+$('#fieldList').addEventListener('change', e => {
+  if (!e.target.classList.contains('fname')) return;
+  const id = e.target.closest('li').dataset.f, f = state.fields.find(x => x.id === id), name = e.target.value.trim();
+  if (!name || nameTaken(name, id)) { toast('Ogiltigt eller upptaget namn'); e.target.value = f.name; return; }
+  if (prefs.widths[f.name]) { prefs.widths[name] = prefs.widths[f.name]; savePrefs(); }
+  mutate(() => f.name = name);
+});
+$('#fieldList').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
+$('#fieldList').addEventListener('click', e => {
+  const b = e.target.closest('[data-m]'); if (!b) return;
+  const id = b.closest('li').dataset.f, F = state.fields, k = F.findIndex(f => f.id === id);
+  if (b.dataset.m === 'up') moveField(id, F[k - 1].id, false);
+  else if (b.dataset.m === 'down') moveField(id, F[k + 1].id, true);
+  else {
+    const used = state.rows.filter(r => r.values[id]).length;
+    if (used && !confirm(`Fältet ”${F[k].name}” har innehåll i ${used} rader. Ta bort fältet och dess innehåll?`)) return;
+    mutate(() => { F.splice(k, 1); state.rows.forEach(r => delete r.values[id]); });
+    renderFieldList();
+  }
+});
+let fdrag = null;
+$('#fieldList').addEventListener('dragstart', e => { const li = e.target.closest('li'); fdrag = li.dataset.f; e.dataTransfer.setData('application/x-hierarkirator', 'f'); });
+$('#fieldList').addEventListener('dragover', e => {
+  const li = e.target.closest('li'); if (!li || !fdrag) return;
+  e.preventDefault();
+  for (const x of $('#fieldList').children) x.classList.remove('over-t', 'over-b');
+  const rc = li.getBoundingClientRect();
+  li.classList.add(e.clientY < rc.top + rc.height / 2 ? 'over-t' : 'over-b');
+});
+$('#fieldList').addEventListener('drop', e => {
+  const li = e.target.closest('li'); if (!li || !fdrag) return;
+  e.preventDefault();
+  const after = li.classList.contains('over-b'), from = fdrag; fdrag = null;
+  moveField(from, li.dataset.f, after);
+});
+$('#fieldList').addEventListener('dragend', () => { fdrag = null; for (const x of $('#fieldList').children) x.classList.remove('over-t', 'over-b'); });
+for (const [id, key] of [['#levelName', 'levelName'], ['#tagName', 'tagName']]) {
+  $(id).addEventListener('change', e => {
+    const v = e.target.value.trim();
+    const clash = state.fields.some(f => f.name.toLowerCase() === v.toLowerCase()) || v.toLowerCase() === (key === 'levelName' ? state.tagName : state.levelName).toLowerCase();
+    if (!v || clash) { toast('Ogiltigt eller upptaget namn'); e.target.value = state[key]; return; }
+    mutate(() => state[key] = v);
+  });
+}
+$('#bFields').onclick = openFields;
+$('#closeFields').onclick = () => $('#dlgFields').close();
+
+/* ---------------- export ---------------- */
+function exportRows(scope) { return scope === 'all' ? state.rows : computeView(scope === 'filtered').visible.map(i => state.rows[i]); }
+function nest(list) {
+  const root = { children: [] }, st = [{ level: 0, node: root }];
+  for (const r of list) {
+    while (st[st.length - 1].level >= r.level) st.pop();
+    const node = { r, children: [] };
+    st[st.length - 1].node.children.push(node);
+    st.push({ level: r.level, node });
+  }
+  return root.children;
+}
+function buildExport() {
+  const fmt = $('#exFormat').value, labelId = $('#exLabel').value, list = exportRows($('#exScope').value);
+  const incF = $('#exFields').checked, incT = $('#exTags').checked;
+  const lf = state.fields.find(f => f.id === labelId) || state.fields[0];
+  const others = state.fields.filter(f => f.id !== lf.id);
+  const label = r => r.values[lf.id] || '';
+  const extras = r => incF ? others.filter(f => r.values[f.id]).map(f => `${f.name}: ${r.values[f.id]}`) : [];
+  switch (fmt) {
+    case 'md': return list.map(r => {
+      let s = '  '.repeat(r.level - 1) + '- ' + label(r);
+      const p = extras(r); if (p.length) s += ' — ' + p.join('; ');
+      if (incT && r.tags.length) s += ' ' + r.tags.map(t => '#' + t.replace(/\s+/g, '_')).join(' ');
+      return s;
+    }).join('\n') + '\n';
+    case 'txt': return list.map(r => {
+      let s = '\t'.repeat(r.level - 1) + label(r);
+      const p = extras(r); if (p.length) s += ' | ' + p.join(' | ');
+      if (incT && r.tags.length) s += ' [' + r.tags.join(', ') + ']';
+      return s;
+    }).join('\n') + '\n';
+    case 'num': {
+      const cnt = [];
+      return list.map(r => {
+        cnt.length = r.level; cnt[r.level - 1] = (cnt[r.level - 1] || 0) + 1;
+        let s = '    '.repeat(r.level - 1) + cnt.map(c => c || 1).join('.') + ' ' + label(r);
+        const p = extras(r); if (p.length) s += ' – ' + p.join('; ');
+        if (incT && r.tags.length) s += ' [' + r.tags.join(', ') + ']';
+        return s;
+      }).join('\n') + '\n';
+    }
+    case 'html': {
+      const li = (nodes, d) => `${'  '.repeat(d)}<ul>\n` + nodes.map(n => {
+        const p = extras(n.r);
+        let s = `${'  '.repeat(d + 1)}<li>${esc(label(n.r))}`;
+        if (p.length) s += ` <small>${esc(p.join('; '))}</small>`;
+        if (incT && n.r.tags.length) s += ' ' + n.r.tags.map(t => `<span class="tag">${esc(t)}</span>`).join(' ');
+        if (n.children.length) s += '\n' + li(n.children, d + 2) + '  '.repeat(d + 1);
+        return s + '</li>\n';
+      }).join('') + `${'  '.repeat(d)}</ul>\n`;
+      return li(nest(list), 0);
+    }
+    case 'json': {
+      const conv = nodes => nodes.map(n => {
+        const o = { [lf.name]: label(n.r) };
+        if (incF) for (const f of others) o[f.name] = n.r.values[f.id] || '';
+        if (incT) o[state.tagName] = n.r.tags;
+        if (n.children.length) o.children = conv(n.children);
+        return o;
+      });
+      return JSON.stringify(conv(nest(list)), null, 2) + '\n';
+    }
+    case 'opml': {
+      const x = s => esc(s).replace(/\n/g, '&#10;');
+      const out = nodes => nodes.map(n => {
+        let a = `text="${x(label(n.r))}"`;
+        const p = extras(n.r); if (p.length) a += ` _note="${x(p.join('\n'))}"`;
+        if (incT && n.r.tags.length) a += ` category="${x(n.r.tags.join(','))}"`;
+        const pad = '  '.repeat(n.r.level + 1);
+        return n.children.length ? `${pad}<outline ${a}>\n${out(n.children)}${pad}</outline>\n` : `${pad}<outline ${a}/>\n`;
+      }).join('');
+      return `<?xml version="1.0" encoding="UTF-8"?>\n<opml version="2.0">\n  <head><title>${x(fileName || 'Hierarkirator')}</title></head>\n  <body>\n${out(nest(list))}  </body>\n</opml>\n`;
+    }
+    case 'cols': {
+      const maxL = Math.max(1, ...list.map(r => r.level));
+      const head = [...Array.from({ length: maxL }, (_, k) => `${state.levelName} ${k + 1}`), ...(incF ? others.map(f => f.name) : []), ...(incT ? [state.tagName] : [])];
+      const lines = [head, ...list.map(r => {
+        const c = new Array(maxL).fill(''); c[r.level - 1] = label(r);
+        return [...c, ...(incF ? others.map(f => r.values[f.id] || '') : []), ...(incT ? [r.tags.join(', ')] : [])];
+      })];
+      return '﻿' + lines.map(l => l.map(csvCell).join(';')).join('\r\n') + '\r\n';
+    }
+    case 'xlsx': return buildXlsx(list, lf, incF ? others : [], incT);
+    default: return toCSV(list);
+  }
+}
+
+/* ---- Excel (.xlsx) utan externa bibliotek: SpreadsheetML + okomprimerad zip ---- */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zipStore(files) {   // files: [{name, data:string}]
+  const enc = new TextEncoder(), parts = [], central = [];
+  const d = new Date(), time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+        date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  let off = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name), data = enc.encode(f.data), crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint16(10, time, true); h.setUint16(12, date, true); h.setUint32(14, crc, true);
+    h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+    c.setUint16(12, time, true); c.setUint16(14, date, true); c.setUint32(16, crc, true);
+    c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, name.length, true);
+    c.setUint32(42, off, true);
+    central.push(new Uint8Array(c.buffer), name);
+    off += 30 + name.length + data.length;
+  }
+  const cdSize = central.reduce((a, p) => a + p.length, 0);
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+  e.setUint32(12, cdSize, true); e.setUint32(16, off, true);
+  const all = [...parts, ...central, new Uint8Array(e.buffer)], out = new Uint8Array(all.reduce((a, p) => a + p.length, 0));
+  let p = 0; for (const a of all) { out.set(a, p); p += a.length; }
+  return out;
+}
+function buildXlsx(list, lf, others, incT) {
+  const x = s => esc(String(s ?? '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ''));
+  const col = n => { let s = ''; n++; while (n) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = (n - m - 1) / 26; } return s; };
+  const MAXI = 15;   // indragsstilar
+  const heads = [state.levelName, 'Nr', lf.name, ...others.map(f => f.name), ...(incT ? [state.tagName] : [])];
+  const widths = [7, 10, fieldWidth(lf, 0) / 7, ...others.map(f => fieldWidth(f, 1) / 7), ...(incT ? [(prefs.tagWidth || 220) / 7] : [])];
+  const cnt = [];
+  const str = (r, c, v, s) => v === '' ? '' : `<c r="${col(c)}${r}" t="inlineStr"${s ? ` s="${s}"` : ''}><is><t xml:space="preserve">${x(v)}</t></is></c>`;
+  let maxOut = 0;
+  const rowsXml = [`<row r="1">${heads.map((h, c) => str(1, c, h, 1)).join('')}</row>`];
+  list.forEach((r, k) => {
+    cnt.length = r.level; cnt[r.level - 1] = (cnt[r.level - 1] || 0) + 1;
+    const n = k + 2, ol = Math.min(r.level - 1, 7); maxOut = Math.max(maxOut, ol);
+    const cells = [`<c r="A${n}"><v>${r.level}</v></c>`, str(n, 1, cnt.map(c => c || 1).join('.')),
+      str(n, 2, r.values[lf.id] || '', 2 + Math.min(r.level - 1, MAXI - 1) + (r.level === 1 ? MAXI : 0)),
+      ...others.map((f, j) => str(n, 3 + j, r.values[f.id] || '')),
+      ...(incT ? [str(n, 3 + others.length, r.tags.join(', '))] : [])];
+    rowsXml.push(`<row r="${n}"${ol ? ` outlineLevel="${ol}"` : ''}>${cells.join('')}</row>`);
+  });
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><outlinePr summaryBelow="0"/></sheetPr>
+<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+<sheetFormatPr defaultRowHeight="15"${maxOut ? ` outlineLevelRow="${maxOut}"` : ''}/>
+<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${Math.max(6, Math.round(w))}" customWidth="1"/>`).join('')}</cols>
+<sheetData>${rowsXml.join('')}</sheetData></worksheet>`;
+  const xf = [];
+  for (let b = 0; b < 2; b++) for (let i = 0; i < MAXI; i++) xf.push(`<xf numFmtId="0" fontId="${b}" fillId="0" borderId="0" xfId="0" applyAlignment="1"${b ? ' applyFont="1"' : ''}><alignment indent="${i}"/></xf>`);
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE6EEFC"/></patternFill></fill></fills>
+<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="${2 + xf.length}"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>${xf.join('')}</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const sheetName = x((fileName || 'Lista').replace(/\.csv$/i, '').replace(/[\\\/\?\*\[\]:]/g, ' ').slice(0, 31) || 'Lista');
+  return zipStore([
+    { name: '[Content_Types].xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>` },
+    { name: '_rels/.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+    { name: 'xl/workbook.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${sheetName}" sheetId="1" r:id="rId1"/></sheets></workbook>` },
+    { name: 'xl/_rels/workbook.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+    { name: 'xl/worksheets/sheet1.xml', data: sheet },
+    { name: 'xl/styles.xml', data: styles },
+  ]);
+}
+const EXT = { xlsx: 'xlsx', md: 'md', txt: 'txt', num: 'txt', html: 'html', json: 'json', opml: 'opml', cols: 'csv', csv: 'csv' };
+const MIME = { xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', md: 'text/markdown', txt: 'text/plain', num: 'text/plain', html: 'text/html', json: 'application/json', opml: 'text/x-opml', cols: 'text/csv', csv: 'text/csv' };
+function refreshExport() {
+  const xl = $('#exFormat').value === 'xlsx';
+  $('#exCopy').disabled = xl;
+  if (xl) {
+    const n = exportRows($('#exScope').value).length;
+    $('#exOut').value = `Excel-fil med ${n} rader.\n\nKolumner: ${state.levelName}, Nr, rubrikfältet (indraget efter nivå)` +
+      `${$('#exFields').checked ? ', övriga fält' : ''}${$('#exTags').checked ? ', ' + state.tagName : ''}.\n` +
+      `Raderna är grupperade per nivå – använd +/− och nivåknapparna 1 2 3 … till vänster i Excel för att fälla ihop och ut.\n\nKlicka ”Ladda ner”.`;
+  } else $('#exOut').value = buildExport().replace(/^﻿/, '');
+}
+$('#bExport').onclick = () => {
+  const sel = $('#exLabel'), cur = sel.value;
+  sel.innerHTML = state.fields.map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join('');
+  if (state.fields.some(f => f.id === cur)) sel.value = cur;
+  if (filterActive()) $('#exScope').value = 'filtered';
+  refreshExport(); $('#dlgExport').showModal();
+};
+for (const id of ['#exFormat', '#exLabel', '#exScope', '#exFields', '#exTags']) $(id).addEventListener('change', refreshExport);
+$('#exCopy').onclick = async () => { try { await navigator.clipboard.writeText($('#exOut').value); toast('Kopierat'); } catch { $('#exOut').select(); document.execCommand('copy'); toast('Kopierat'); } };
+$('#exDl').onclick = () => {
+  const fmt = $('#exFormat').value, base = (fileName || 'lista').replace(/\.csv$/i, '');
+  download(`${base}${fmt === 'cols' ? '-nivakolumner' : fmt === 'csv' ? '-export' : ''}.${EXT[fmt]}`, buildExport(), MIME[fmt]);
+};
+$('#closeExport').onclick = () => $('#dlgExport').close();
+
+/* ---------------- misc ---------------- */
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3200); }
+
+(async function init() {
+  try { Object.assign(prefs, JSON.parse(localStorage.getItem(LS_PREFS)) || {}); } catch {}
+  $('#cbNum').checked = prefs.numbering;
+  let b = null;
+  try { b = JSON.parse(localStorage.getItem(LS_BACKUP)); } catch {}
+  if (b && b.state && b.state.fields && b.state.fields.length) {
+    state = b.state; fileName = b.fileName; normalize();
+    if (b.dirty) version = 1;
+  } else state = defaultState();
+  render();
+  if (!FS) return;
+  const h = await loadHandle();
+  if (!h) return;
+  const btn = $('#bReconnect');
+  btn.textContent = `Fortsätt med ${h.name}`;
+  btn.title = 'Återanslut till senast använda fil (läser in den och slår på autosparning)';
+  btn.hidden = false;
+  btn.onclick = async () => {
+    try {
+      if (await h.requestPermission({ mode: 'readwrite' }) !== 'granted') return toast('Behörighet nekades');
+      if (b && b.dirty && b.fileName === h.name &&
+          confirm('Det finns osparade ändringar i webbläsaren för den här filen.\n\nOK = behåll ändringarna och skriv dem till filen\nAvbryt = läs in filen som den är')) {
+        fileHandle = h; fileName = h.name; await save(true);
+      } else {
+        fileHandle = h;
+        loadState(stateFromCSV(await decodeFile(await h.getFile())), h.name);
+      }
+      btn.hidden = true; updateStatus();
+    } catch (e) { toast('Kunde inte öppna filen: ' + e.message); }
+  };
+})();
+</script>
+</body>
+</html>
