@@ -82,6 +82,16 @@ tr.checked td.hd{box-shadow:inset 3px 0 0 var(--accent)}
   background-image:repeating-linear-gradient(90deg,transparent 0 10px,var(--guide) 10px 11px,transparent 11px 22px)}
 tbody tr.sel{outline:2px solid var(--accent);outline-offset:-2px}
 #fieldList li label{white-space:nowrap}
+textarea.xp{position:absolute;z-index:6;margin:0;resize:none;overflow:hidden;font:inherit;line-height:18px;padding:3px 4px;
+  border:2px solid var(--accent);border-radius:4px;background:var(--panel);color:var(--text);
+  box-shadow:0 6px 20px rgba(0,0,0,.18);overflow-wrap:anywhere;white-space:pre-wrap}
+textarea.xp:focus{outline:none}
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:4px 24px}
+.keys h3{font-size:13px;margin:12px 0 4px;color:var(--muted);font-weight:600}
+.keys table{border-collapse:collapse;width:100%;font-size:13px}
+.keys td{padding:3px 6px 3px 0;border-bottom:1px solid var(--border);vertical-align:top}
+.keys td:first-child{white-space:nowrap;width:1%;padding-right:14px}
+kbd{font-family:inherit;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-size:12px;background:var(--bg)}
 .tg{border:none;background:none;padding:0;width:24px;flex:0 0 24px;text-align:center;color:var(--muted);cursor:pointer;line-height:30px}
 .tg.leaf{cursor:grab;opacity:.45;font-size:10px}
 .tg:hover:not(.leaf){color:var(--accent)}
@@ -139,6 +149,7 @@ dialog h2{margin:0 0 6px;font-size:17px}
     <span class="sep"></span>
     <button id="bFields">Fält…</button>
     <button id="bExport">Exportera…</button>
+    <button id="bKeys" title="Visa kortkommandon (?)">⌨ Kortkommandon</button>
     <div class="status" id="status"><span class="dot"></span><span id="statusText"></span><button id="bPerm" hidden>Ge skrivbehörighet</button></div>
   </div>
   <div class="bar">
@@ -168,9 +179,7 @@ dialog h2{margin:0 0 6px;font-size:17px}
 </main>
 <footer>
   Dra i <b>⋮⋮</b> eller i radens punkt/indrag för att flytta den (med underrader) – dra i sidled för att välja nivå.
-  I fält: <kbd>Enter</kbd> bekräfta och markera raden. På markerad rad: <kbd>Enter</kbd> ny rad under · <kbd>Ctrl+Enter</kbd> ny underrad ·
-  <kbd>Delete</kbd> ta bort · <kbd>F2</kbd> redigera · <kbd>↑/↓</kbd> byt rad · <kbd>←/→</kbd> fäll ihop/ut · <kbd>Tab</kbd>/<kbd>Shift+Tab</kbd> nivå in/ut ·
-  <kbd>Alt+↑/↓</kbd> flytta · <kbd>Ctrl+S</kbd> spara · Autosparning var 10:e sekund.
+  <kbd>Enter</kbd> bekräftar ett fält · <kbd>Enter</kbd> på markerad rad ger ny rad · <kbd>Delete</kbd> tar bort · <kbd>?</kbd> alla kortkommandon · Autosparning var 10:e sekund.
 </footer>
 <datalist id="taglist"></datalist>
 <input type="file" id="fileInput" accept=".csv,text/csv" hidden>
@@ -183,6 +192,46 @@ dialog h2{margin:0 0 6px;font-size:17px}
   <div class="row"><input id="newField" placeholder="Nytt fält…"><button id="addField" class="primary">Lägg till fält</button></div>
   <div class="row lbl">Kolumnnamn i CSV för nivå: <input id="levelName" size="10"> för taggar: <input id="tagName" size="10"></div>
   <div class="end"><button id="closeFields">Stäng</button></div>
+</dialog>
+
+<dialog id="dlgKeys">
+  <h2>Kortkommandon</h2>
+  <div class="keys">
+    <section><h3>När du skriver i ett fält</h3><table>
+      <tr><td><kbd>Enter</kbd> / <kbd>Esc</kbd></td><td>Bekräfta och markera raden</td></tr>
+      <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Samma fält på raden ovanför / nedanför</td></tr>
+      <tr><td><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd></td><td>I första fältet: nivå in / ut. Annars: nästa / föregående fält</td></tr>
+      <tr><td><kbd>Alt+→</kbd> / <kbd>Alt+←</kbd></td><td>Nivå in / ut</td></tr>
+      <tr><td><kbd>Alt+↑</kbd> / <kbd>Alt+↓</kbd></td><td>Flytta raden (med underrader) upp / ner</td></tr>
+      <tr><td><kbd>Enter</kbd> i taggfältet</td><td>Lägg till taggen (tomt fält: bekräfta)</td></tr>
+      <tr><td><kbd>Backsteg</kbd> i tomt taggfält</td><td>Ta bort sista taggen</td></tr>
+    </table></section>
+    <section><h3>När en rad är markerad</h3><table>
+      <tr><td><kbd>Enter</kbd></td><td>Ny rad under, på samma nivå</td></tr>
+      <tr><td><kbd>Ctrl+Enter</kbd></td><td>Ny underrad</td></tr>
+      <tr><td><kbd>Delete</kbd></td><td>Ta bort raden (och underrader)</td></tr>
+      <tr><td><kbd>F2</kbd></td><td>Redigera raden</td></tr>
+      <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Markera raden ovanför / nedanför</td></tr>
+      <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>Fäll ihop / ut</td></tr>
+      <tr><td><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd></td><td>Nivå in / ut</td></tr>
+      <tr><td><kbd>Alt+↑</kbd> / <kbd>Alt+↓</kbd></td><td>Flytta raden upp / ner</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Avmarkera</td></tr>
+      <tr><td><kbd>?</kbd></td><td>Visa den här listan</td></tr>
+    </table></section>
+    <section><h3>Allmänt</h3><table>
+      <tr><td><kbd>Ctrl+S</kbd></td><td>Spara nu</td></tr>
+      <tr><td><kbd>Ctrl+Z</kbd></td><td>Ångra</td></tr>
+      <tr><td><kbd>Ctrl+Y</kbd> / <kbd>Ctrl+Shift+Z</kbd></td><td>Gör om</td></tr>
+    </table></section>
+    <section><h3>Mus</h3><table>
+      <tr><td>Dra <b>⋮⋮</b> eller punkten/indraget</td><td>Flytta raden – dra i sidled för att byta nivå</td></tr>
+      <tr><td>Dra <b>＋ Ny rad</b></td><td>Placera en ny rad var som helst</td></tr>
+      <tr><td>Shift-klick på kryssruta</td><td>Välj / avmarkera ett intervall</td></tr>
+      <tr><td>Dra kolumnrubrik</td><td>Byt ordning på fälten</td></tr>
+      <tr><td>Dra rubrikens högerkant</td><td>Ändra kolumnbredd</td></tr>
+    </table></section>
+  </div>
+  <div class="end"><button id="closeKeys">Stäng</button></div>
 </dialog>
 
 <dialog id="dlgExport">
@@ -375,6 +424,7 @@ function chip(t, removable) {
 }
 function render(focus) {
   const keep = focus || captureFocus();
+  closeExpander();
   view = computeView(false);
   renderHead(); renderBody(); renderLevels(); renderTagFilter(); renderSelBar(); updateStatus(); updateUndoBtns();
   restoreFocus(keep);
@@ -445,6 +495,7 @@ function renderTagFilter() {
 }
 function captureFocus() {
   const a = document.activeElement;
+  if (xp && a === xp.ta) return { id: xp.id, f: xp.f, tagin: false, s: a.selectionStart, e: a.selectionEnd };
   if (!a || !tbody.contains(a)) return null;
   const tr = a.closest('tr');
   return { id: tr.dataset.id, f: a.dataset.f || null, tagin: a.classList.contains('tagin'), s: a.selectionStart, e: a.selectionEnd };
@@ -534,10 +585,61 @@ function hiddenByFilterNote(id) {
   if (filterActive() && !tbody.querySelector(`tr[data-id="${id}"]`)) toast('Raden är dold av det aktiva filtret');
 }
 
+/* ---- expanderande fält: visar hela texten när den inte ryms ---- */
+let xp = null, pointerDown = false;
+const overflows = inp => inp.scrollWidth > inp.clientWidth + 1;
+function fitXp() { if (!xp) return; xp.ta.style.height = 'auto'; xp.ta.style.height = (xp.ta.scrollHeight + 4) + 'px'; }
+function openExpander(inp, fromTyping) {
+  closeExpander();
+  const tr = inp.closest('tr'), r = inp.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+  const s = inp.selectionStart, e = inp.selectionEnd;
+  const ta = document.createElement('textarea');
+  ta.className = 'xp'; ta.value = inp.value; ta.rows = 1;
+  ta.style.left = (r.left - wr.left) + 'px';
+  ta.style.top = (r.top - wr.top) + 'px';
+  ta.style.width = Math.max(r.width, 320) + 'px';
+  ta.style.fontWeight = getComputedStyle(inp).fontWeight;
+  wrap.appendChild(ta);
+  xp = { ta, inp, id: tr.dataset.id, f: inp.dataset.f };
+  fitXp();
+  ta.focus();                                   // input tappar fokus här (focusout nollställer editSnap)
+  if (!fromTyping) editSnap = snap();
+  ta.setSelectionRange(s, e);
+  ta.addEventListener('input', () => {
+    if (/[\r\n]/.test(ta.value)) { const p = ta.selectionStart; ta.value = ta.value.replace(/\r?\n/g, ' '); ta.setSelectionRange(p, p); }
+    inp.value = ta.value;
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
+    fitXp();
+  });
+  ta.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter' || ev.key === 'Escape') { ev.preventDefault(); const id = xp.id; closeExpander(); selectRow(id); }
+    else if (ev.key === 'Tab') {
+      ev.preventDefault();
+      const x = xp; closeExpander();
+      if (x.inp.hasAttribute('data-first') && !ev.ctrlKey) { const i = idxOf(x.id); restoreFocus({ id: x.id, f: x.f }); ev.shiftKey ? outdent(i) : indent(i); return; }
+      const list = [...tbody.querySelector(`tr[data-id="${x.id}"]`).querySelectorAll('input.cell, input.tagin')];
+      const nx = list[list.indexOf(x.inp) + (ev.shiftKey ? -1 : 1)];
+      if (nx) nx.focus(); else selectRow(x.id);
+    }
+  });
+  ta.addEventListener('blur', () => { if (xp && xp.ta === ta) closeExpander(); });
+}
+function closeExpander() {
+  if (!xp) return;
+  const x = xp; xp = null;
+  x.ta.remove(); x.inp.scrollLeft = 0;
+}
+function maybeExpand(inp) { if (document.activeElement === inp && overflows(inp)) openExpander(inp); }
+tbody.addEventListener('mousedown', () => { pointerDown = true; });
+document.addEventListener('mouseup', () => setTimeout(() => { pointerDown = false; }));
+main.addEventListener('scroll', () => { if (xp && document.activeElement !== xp.ta) closeExpander(); });
+window.addEventListener('resize', () => { if (xp) { const r = xp.inp.getBoundingClientRect(), wr = wrap.getBoundingClientRect(); xp.ta.style.left = (r.left - wr.left) + 'px'; xp.ta.style.top = (r.top - wr.top) + 'px'; } });
+
 /* ---------------- tbody events ---------------- */
 tbody.addEventListener('focusin', e => {
   const t = e.target;
   if (t.matches('input.cell, input.tagin')) { editSnap = snap(); selectRow(t.closest('tr').dataset.id); }
+  if (t.matches('input.cell') && !pointerDown) setTimeout(() => maybeExpand(t));   // tangentbordsfokus
 });
 tbody.addEventListener('focusout', e => {
   const t = e.target;
@@ -551,10 +653,12 @@ tbody.addEventListener('input', e => {
   const r = rowOfEl(t); if (!r) return;
   r.values[t.dataset.f] = t.value;
   markDirty();
+  if (document.activeElement === t && overflows(t)) openExpander(t, true);   // texten växte ur fältet
 });
 tbody.addEventListener('click', e => {
   const t = e.target, tr = t.closest('tr'); if (!tr) return;
   const i = idxOf(tr.dataset.id), r = state.rows[i];
+  if (t.matches('input.cell')) { maybeExpand(t); return; }
   if (t.classList.contains('ck')) {
     const vis = view.visible, pos = vis.indexOf(i), last = ui.lastCk ? vis.indexOf(idxOf(ui.lastCk)) : -1;
     if (e.shiftKey && last >= 0) setChecked(vis.slice(Math.min(pos, last), Math.max(pos, last) + 1).map(k => state.rows[k]), t.checked);
@@ -619,6 +723,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'Delete') deleteRow(i);
   else if (k === 'F2') { const el = tr.querySelector('input.cell'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
   else if (k === 'Escape') selectRow(null);
+  else if (k === '?') $('#dlgKeys').showModal();
   else if (k === 'Tab' && !e.ctrlKey && !e.altKey) e.shiftKey ? outdent(i) : indent(i);
   else if (e.altKey && !e.ctrlKey && alt[k]) alt[k](i);
   else if ((k === 'ArrowUp' || k === 'ArrowDown') && !e.ctrlKey && !e.altKey && !e.shiftKey) {
@@ -1008,6 +1113,8 @@ for (const [id, key] of [['#levelName', 'levelName'], ['#tagName', 'tagName']]) 
   });
 }
 $('#bFields').onclick = openFields;
+$('#bKeys').onclick = () => $('#dlgKeys').showModal();
+$('#closeKeys').onclick = () => $('#dlgKeys').close();
 $('#closeFields').onclick = () => $('#dlgFields').close();
 
 /* ---------------- export ---------------- */
