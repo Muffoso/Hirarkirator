@@ -78,6 +78,10 @@ tr.checked td.hd{box-shadow:inset 3px 0 0 var(--accent)}
 .dh{display:flex;align-items:center;flex:none;cursor:grab;border-radius:5px;user-select:none;background-repeat:no-repeat;
   background-image:repeating-linear-gradient(90deg,transparent 0 10px,var(--guide) 10px 11px,transparent 11px 22px)}
 .dh:hover{background-color:var(--accent-soft)}
+.ti{display:flex;align-items:stretch;min-height:30px;background-repeat:no-repeat;
+  background-image:repeating-linear-gradient(90deg,transparent 0 10px,var(--guide) 10px 11px,transparent 11px 22px)}
+tbody tr.sel{outline:2px solid var(--accent);outline-offset:-2px}
+#fieldList li label{white-space:nowrap}
 .tg{border:none;background:none;padding:0;width:24px;flex:0 0 24px;text-align:center;color:var(--muted);cursor:pointer;line-height:30px}
 .tg.leaf{cursor:grab;opacity:.45;font-size:10px}
 .tg:hover:not(.leaf){color:var(--accent)}
@@ -164,8 +168,9 @@ dialog h2{margin:0 0 6px;font-size:17px}
 </main>
 <footer>
   Dra i <b>⋮⋮</b> eller i radens punkt/indrag för att flytta den (med underrader) – dra i sidled för att välja nivå.
-  <kbd>Enter</kbd> ny rad · <kbd>Ctrl+Enter</kbd> ny underrad · <kbd>Tab</kbd>/<kbd>Shift+Tab</kbd> (i första fältet) eller <kbd>Alt+→/←</kbd> nivå in/ut ·
-  <kbd>Alt+↑/↓</kbd> flytta · <kbd>↑/↓</kbd> byt rad · <kbd>Ctrl+S</kbd> spara · Autosparning var 10:e sekund.
+  I fält: <kbd>Enter</kbd> bekräfta och markera raden. På markerad rad: <kbd>Enter</kbd> ny rad under · <kbd>Ctrl+Enter</kbd> ny underrad ·
+  <kbd>Delete</kbd> ta bort · <kbd>F2</kbd> redigera · <kbd>↑/↓</kbd> byt rad · <kbd>←/→</kbd> fäll ihop/ut · <kbd>Tab</kbd>/<kbd>Shift+Tab</kbd> nivå in/ut ·
+  <kbd>Alt+↑/↓</kbd> flytta · <kbd>Ctrl+S</kbd> spara · Autosparning var 10:e sekund.
 </footer>
 <datalist id="taglist"></datalist>
 <input type="file" id="fileInput" accept=".csv,text/csv" hidden>
@@ -232,7 +237,8 @@ let version = 0, savedVersion = 0, saving = false, lastSaved = null, saveError =
 let undoStack = [], redoStack = [], editSnap = null;
 let view = null, drag = null;
 const ui = { tags: new Set(), tagMode: 'any', withChildren: false, search: '', selected: null, onlyChecked: false, lastCk: null };
-let prefs = { numbering: true, widths: {}, tagWidth: 220 };
+let prefs = { numbering: true, widths: {}, tagWidth: 220, indent: {} };
+const isIndented = f => !!(prefs.indent && prefs.indent[f.name]);
 
 function mkRow(level, values = {}, tags = []) { return { id: newId('r'), level, values, tags, collapsed: false }; }
 function defaultState() {
@@ -393,6 +399,7 @@ function renderBody() {
       const inp = `<input class="cell" data-f="${f.id}"${k === 0 ? ' data-first' : ''} value="${esc(r.values[f.id] || '')}">`;
       return k === 0
         ? `<td><div class="tw"><span class="dh" draggable="true" title="Dra för att flytta (med underrader) – i sidled för att byta nivå" style="padding-left:${ind}px;background-size:${ind}px 100%">${tg}</span>${inp}${cnt}</div></td>`
+        : isIndented(f) ? `<td><div class="ti" style="padding-left:${ind}px;background-size:${ind}px 100%">${inp}</div></td>`
         : `<td>${inp}</td>`;
     }).join('');
     out.push(`<tr data-id="${r.id}" class="lvl${r.level}${ctx ? ' ctx' : ''}${ui.selected === r.id ? ' sel' : ''}${r.checked ? ' checked' : ''}">` +
@@ -480,10 +487,11 @@ function addRowAt(i, mode, f) {   // mode: 'sib' | 'child' | 'end'
 function deleteRow(i) {
   const R = state.rows, e = subEnd(i), n = e - i - 1;
   if (n > 0 && !confirm(`Ta bort raden och dess ${n} underrader?`)) return;
-  const prev = view.visible[view.visible.indexOf(i) - 1];
-  const prevId = prev != null ? R[prev].id : null;
+  const pos = view.visible.indexOf(i);
+  const after = view.visible.slice(pos + 1).find(k => k >= e);
+  const nb = after != null ? R[after] : (pos > 0 ? R[view.visible[pos - 1]] : null);
   mutate(() => R.splice(i, e - i));
-  if (prevId) restoreFocus({ id: prevId, f: state.fields[0].id, end: true });
+  selectRow(nb ? nb.id : null);
 }
 function indent(i) {
   const R = state.rows;
@@ -576,6 +584,9 @@ tbody.addEventListener('keydown', e => {
       e.preventDefault();
       const v = t.value; t.value = '';
       if (v.trim()) { addTags(state.rows[i], v); restoreFocus({ id: tr.dataset.id, tagin: true }); }
+      else if (e.key === 'Enter') { t.blur(); selectRow(tr.dataset.id); }
+    } else if (e.key === 'Escape') {
+      e.preventDefault(); t.value = ''; t.blur(); selectRow(tr.dataset.id);
     } else if (e.key === 'Backspace' && !t.value && state.rows[i].tags.length) {
       mutate(() => state.rows[i].tags.pop()); restoreFocus({ id: tr.dataset.id, tagin: true });
     }
@@ -583,7 +594,7 @@ tbody.addEventListener('keydown', e => {
   }
   if (!t.matches('input.cell')) return;
   const isFirst = t.hasAttribute('data-first');
-  if (e.key === 'Enter') { e.preventDefault(); addRowAt(i, (e.ctrlKey || e.metaKey) ? 'child' : 'sib', f); return; }
+  if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); t.blur(); selectRow(tr.dataset.id); return; }   // bekräfta → radläge
   if (e.key === 'Tab' && isFirst && !e.ctrlKey && !e.altKey) { e.preventDefault(); e.shiftKey ? outdent(i) : indent(i); return; }
   if (e.altKey && !e.ctrlKey) {
     const fn = { ArrowRight: indent, ArrowLeft: outdent, ArrowUp: moveUp, ArrowDown: moveDown }[e.key];
@@ -593,6 +604,36 @@ tbody.addEventListener('keydown', e => {
     const other = e.key === 'ArrowUp' ? tr.previousElementSibling : tr.nextElementSibling;
     if (other) { e.preventDefault(); const el = other.querySelector(`input.cell[data-f="${f}"]`); el.focus(); el.select(); }
   }
+});
+
+/* ---- radläge: tangenter när en rad är markerad men inget fält redigeras ---- */
+document.addEventListener('keydown', e => {
+  if (e.defaultPrevented || document.querySelector('dialog[open]') || !ui.selected) return;
+  const a = document.activeElement;
+  if (a && a.matches('input:not([type=checkbox]), textarea, select')) return;
+  if (a && a !== document.body && !tbody.contains(a) && a.matches('button') && (e.key === 'Enter' || e.key === ' ')) return;
+  const i = idxOf(ui.selected), tr = tbody.querySelector(`tr[data-id="${ui.selected}"]`);
+  if (i < 0 || !tr) return;
+  const k = e.key, alt = { ArrowRight: indent, ArrowLeft: outdent, ArrowUp: moveUp, ArrowDown: moveDown };
+  if (k === 'Enter') addRowAt(i, (e.ctrlKey || e.metaKey) ? 'child' : 'sib');
+  else if (k === 'Delete') deleteRow(i);
+  else if (k === 'F2') { const el = tr.querySelector('input.cell'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+  else if (k === 'Escape') selectRow(null);
+  else if (k === 'Tab' && !e.ctrlKey && !e.altKey) e.shiftKey ? outdent(i) : indent(i);
+  else if (e.altKey && !e.ctrlKey && alt[k]) alt[k](i);
+  else if ((k === 'ArrowUp' || k === 'ArrowDown') && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+    const o = k === 'ArrowUp' ? tr.previousElementSibling : tr.nextElementSibling;
+    if (o) { selectRow(o.dataset.id); o.scrollIntoView({ block: 'nearest' }); }
+  }
+  else if ((k === 'ArrowRight' || k === 'ArrowLeft') && !e.ctrlKey && !e.shiftKey && tr.querySelector('.tg:not(.leaf)')) {
+    const r = state.rows[i], want = k === 'ArrowLeft';
+    if (r.collapsed !== want) { r.collapsed = want; backupLocal(); render(); }
+  }
+  else return;
+  e.preventDefault();
+});
+document.addEventListener('mousedown', e => {   // klick utanför listan avmarkerar
+  if (ui.selected && main.contains(e.target) && !tbody.contains(e.target)) selectRow(null);
 });
 
 /* ---------------- drag & drop: rows ---------------- */
@@ -899,7 +940,9 @@ async function loadHandle() {
 function openFields() { renderFieldList(); $('#levelName').value = state.levelName; $('#tagName').value = state.tagName; $('#dlgFields').showModal(); }
 function renderFieldList() {
   $('#fieldList').innerHTML = state.fields.map((f, k) => `<li draggable="true" data-f="${f.id}"><span class="grip">⋮⋮</span>
-    <input class="fname" value="${esc(f.name)}"><button data-m="up" ${k === 0 ? 'disabled' : ''}>↑</button><button data-m="down" ${k === state.fields.length - 1 ? 'disabled' : ''}>↓</button>
+    <input class="fname" value="${esc(f.name)}">
+    <label class="lbl" title="${k === 0 ? 'Första fältet visas alltid som hierarki' : 'Visa fältet med indrag efter nivå, som första fältet'}"><input type="checkbox" class="find"${k === 0 || isIndented(f) ? ' checked' : ''}${k === 0 ? ' disabled' : ''}> Indrag</label>
+    <button data-m="up" ${k === 0 ? 'disabled' : ''}>↑</button><button data-m="down" ${k === state.fields.length - 1 ? 'disabled' : ''}>↓</button>
     <button data-m="del" title="Ta bort fältet" ${state.fields.length < 2 ? 'disabled' : ''}>✕</button></li>`).join('');
 }
 function nameTaken(name, exceptId) {
@@ -915,10 +958,16 @@ $('#addField').onclick = () => {
 };
 $('#newField').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#addField').click(); } });
 $('#fieldList').addEventListener('change', e => {
+  if (e.target.classList.contains('find')) {
+    const f = state.fields.find(x => x.id === e.target.closest('li').dataset.f);
+    prefs.indent[f.name] = e.target.checked; savePrefs(); render(); return;
+  }
   if (!e.target.classList.contains('fname')) return;
   const id = e.target.closest('li').dataset.f, f = state.fields.find(x => x.id === id), name = e.target.value.trim();
   if (!name || nameTaken(name, id)) { toast('Ogiltigt eller upptaget namn'); e.target.value = f.name; return; }
-  if (prefs.widths[f.name]) { prefs.widths[name] = prefs.widths[f.name]; savePrefs(); }
+  if (prefs.widths[f.name]) prefs.widths[name] = prefs.widths[f.name];
+  if (prefs.indent[f.name]) prefs.indent[name] = true;
+  savePrefs();
   mutate(() => f.name = name);
 });
 $('#fieldList').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
@@ -1095,7 +1144,7 @@ function buildXlsx(list, lf, others, incT) {
     const n = k + 2, ol = Math.min(r.level - 1, 7); maxOut = Math.max(maxOut, ol);
     const cells = [`<c r="A${n}"><v>${r.level}</v></c>`, str(n, 1, cnt.map(c => c || 1).join('.')),
       str(n, 2, r.values[lf.id] || '', 2 + Math.min(r.level - 1, MAXI - 1) + (r.level === 1 ? MAXI : 0)),
-      ...others.map((f, j) => str(n, 3 + j, r.values[f.id] || '')),
+      ...others.map((f, j) => str(n, 3 + j, r.values[f.id] || '', isIndented(f) ? 2 + Math.min(r.level - 1, MAXI - 1) : 0)),
       ...(incT ? [str(n, 3 + others.length, r.tags.join(', '))] : [])];
     rowsXml.push(`<row r="${n}"${ol ? ` outlineLevel="${ol}"` : ''}>${cells.join('')}</row>`);
   });
@@ -1165,6 +1214,7 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 
 (async function init() {
   try { Object.assign(prefs, JSON.parse(localStorage.getItem(LS_PREFS)) || {}); } catch {}
+  prefs.indent = prefs.indent || {};
   $('#cbNum').checked = prefs.numbering;
   let b = null;
   try { b = JSON.parse(localStorage.getItem(LS_BACKUP)); } catch {}
