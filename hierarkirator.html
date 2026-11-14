@@ -47,21 +47,21 @@ input,select,textarea{font:inherit;color:var(--text);background:var(--panel);bor
 #tagfilter{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 main{flex:1;overflow:auto;position:relative}
 #wrap{position:relative;width:max-content;min-width:100%;padding-bottom:140px}
-table{border-collapse:separate;border-spacing:0;table-layout:fixed}
-thead th{position:sticky;top:0;z-index:3;background:var(--panel);border-bottom:1px solid var(--border);text-align:left;font-weight:600;font-size:13px;
+#grid{border-collapse:separate;border-spacing:0;table-layout:fixed}
+#thead th{position:sticky;top:0;z-index:3;background:var(--panel);border-bottom:1px solid var(--border);text-align:left;font-weight:600;font-size:13px;
   padding:6px 8px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none}
-thead th.fh{cursor:grab}
-thead th.fh:hover{color:var(--text)}
-thead th.drop-l{box-shadow:inset 3px 0 0 var(--accent)}
-thead th.drop-r{box-shadow:inset -3px 0 0 var(--accent)}
+#thead th.fh{cursor:grab}
+#thead th.fh:hover{color:var(--text)}
+#thead th.drop-l{box-shadow:inset 3px 0 0 var(--accent)}
+#thead th.drop-r{box-shadow:inset -3px 0 0 var(--accent)}
 .rz{position:absolute;right:0;top:0;bottom:0;width:6px;cursor:col-resize}
 .rz:hover{background:var(--accent-soft)}
-thead th{position:sticky}
-tbody td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;background:var(--panel)}
-tbody tr:hover td{background:var(--hover)}
-tbody tr.sel td{background:var(--sel)}
-tbody tr.ctx input.cell{color:var(--ctx)}
-tbody tr.dragging td{opacity:.35}
+#thead th{position:sticky}
+#tbody td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;background:var(--panel)}
+#tbody tr:hover td{background:var(--hover)}
+#tbody tr.sel td{background:var(--sel)}
+#tbody tr.ctx input.cell{color:var(--ctx)}
+#tbody tr.dragging td{opacity:.35}
 td.hd{white-space:nowrap;color:var(--muted);font-size:12px;padding-left:4px}
 td.hd .hdw{display:flex;align-items:center;min-height:30px}
 .grip{cursor:grab;display:inline-flex;align-items:center;justify-content:center;width:30px;align-self:stretch;min-height:30px;
@@ -80,7 +80,7 @@ tr.checked td.hd{box-shadow:inset 3px 0 0 var(--accent)}
 .dh:hover{background-color:var(--accent-soft)}
 .ti{display:flex;align-items:stretch;min-height:30px;background-repeat:no-repeat;
   background-image:repeating-linear-gradient(90deg,transparent 0 10px,var(--guide) 10px 11px,transparent 11px 22px)}
-tbody tr.sel{outline:2px solid var(--accent);outline-offset:-2px}
+#tbody tr.sel{outline:2px solid var(--accent);outline-offset:-2px}
 #fieldList li label{white-space:nowrap}
 textarea.xp{position:absolute;z-index:6;margin:0;resize:none;overflow:hidden;font:inherit;line-height:18px;padding:3px 4px;
   border:2px solid var(--accent);border-radius:4px;background:var(--panel);color:var(--text);
@@ -88,7 +88,7 @@ textarea.xp{position:absolute;z-index:6;margin:0;resize:none;overflow:hidden;fon
 textarea.xp:focus{outline:none}
 .keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:4px 24px}
 .keys h3{font-size:13px;margin:12px 0 4px;color:var(--muted);font-weight:600}
-.keys table{border-collapse:collapse;width:100%;font-size:13px}
+.keys table{border-collapse:collapse;table-layout:auto;width:100%;font-size:13px}
 .keys td{padding:3px 6px 3px 0;border-bottom:1px solid var(--border);vertical-align:top}
 .keys td:first-child{white-space:nowrap;width:1%;padding-right:14px}
 kbd{font-family:inherit;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-size:12px;background:var(--bg)}
@@ -132,6 +132,31 @@ dialog h2{margin:0 0 6px;font-size:17px}
 #toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--panel);padding:8px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
 #toast.show{opacity:.95}
 [hidden]{display:none!important}
+#panes{flex:1;min-height:0;display:flex;flex-direction:column}
+#panes main{flex:1 1 0;min-height:80px}
+#split{flex:none;height:7px;cursor:row-resize;background:var(--border);border-top:1px solid var(--panel)}
+#split:hover{background:var(--accent)}
+#imgPane{flex:none;overflow:auto;background:var(--bg);border-top:1px solid var(--border)}
+.imgbar{position:sticky;top:0;z-index:7;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 14px;background:var(--panel);border-bottom:1px solid var(--border)}
+#imgs{padding:12px 14px;display:flex;flex-direction:column;gap:16px;--imgw:100%}
+#imgs.placing .imgbox{cursor:crosshair}
+.imgcard{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px}
+.imghead{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.imghead button{padding:0 7px}
+.imgbox{position:relative;width:var(--imgw);max-width:100%;user-select:none}
+.imgbox img{display:block;width:100%;height:auto;-webkit-user-drag:none}
+.imgbox.dropok{outline:3px dashed var(--accent);outline-offset:2px}
+.mlayer{position:absolute;inset:0}
+.missing{padding:24px;color:var(--muted);border:1px dashed var(--border);border-radius:6px}
+.mark,.mk{background:#fff;border:2px solid #000;color:#000;font:700 11px/18px var(--font);text-align:center;border-radius:11px;user-select:none}
+.mark{position:absolute;transform:translate(-50%,-50%);min-width:22px;height:22px;padding:0 4px;cursor:grab;
+  box-shadow:0 1px 3px rgba(0,0,0,.45);z-index:1;transition:transform .12s}
+.mark.sel{background:#ffd60a;transform:translate(-50%,-50%) scale(1.3);z-index:2}
+.mark.cur{box-shadow:0 0 0 3px var(--accent),0 1px 3px rgba(0,0,0,.45)}
+.mark.dragging{cursor:grabbing;transition:none}
+.mk{display:inline-flex;align-items:center;justify-content:center;align-self:center;flex:none;min-width:20px;height:20px;
+  padding:0 3px;margin-right:6px;font-size:10px;line-height:16px;cursor:pointer}
+#tbody tr.sel .mk{background:#ffd60a}
 </style>
 </head>
 <body>
@@ -170,6 +195,7 @@ dialog h2{margin:0 0 6px;font-size:17px}
     <label class="lbl"><input type="checkbox" id="cbNum"> Numrering</label>
   </div>
 </header>
+<div id="panes">
 <main id="main">
   <div id="wrap">
     <table id="grid"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="tbody"></tbody></table>
@@ -177,6 +203,20 @@ dialog h2{margin:0 0 6px;font-size:17px}
     <div id="dropline"><span></span></div>
   </div>
 </main>
+<div id="split" title="Dra för att ändra storlek" hidden></div>
+<section id="imgPane">
+  <div class="imgbar">
+    <b>Bilder</b>
+    <button id="bAddImg">＋ Lägg till bild…</button>
+    <button id="bPlace" title="Klicka i en bild för att placera en markering för den markerade raden">📍 Placera markering</button>
+    <span class="lbl">Bredd:</span>
+    <select id="imgW"><option value="25">25 %</option><option value="33">33 %</option><option value="50">50 %</option><option value="75">75 %</option><option value="100">100 %</option></select>
+    <span class="lbl" id="imgInfo"></span>
+  </div>
+  <div id="imgs"></div>
+</section>
+</div>
+<input type="file" id="imgInput" accept="image/*" multiple hidden>
 <footer>
   Dra i <b>⋮⋮</b> eller i radens punkt/indrag för att flytta den (med underrader) – dra i sidled för att välja nivå.
   <kbd>Enter</kbd> bekräftar ett fält · <kbd>Enter</kbd> på markerad rad ger ny rad · <kbd>Delete</kbd> tar bort · <kbd>?</kbd> alla kortkommandon · Autosparning var 10:e sekund.
@@ -229,6 +269,16 @@ dialog h2{margin:0 0 6px;font-size:17px}
       <tr><td>Shift-klick på kryssruta</td><td>Välj / avmarkera ett intervall</td></tr>
       <tr><td>Dra kolumnrubrik</td><td>Byt ordning på fälten</td></tr>
       <tr><td>Dra rubrikens högerkant</td><td>Ändra kolumnbredd</td></tr>
+    </table></section>
+    <section><h3>Bilder och markeringar</h3><table>
+      <tr><td>Dra en rad till en bild</td><td>Placera en markering för raden</td></tr>
+      <tr><td>Dra <b>＋ Ny rad</b> till en bild</td><td>Ny rad med markering</td></tr>
+      <tr><td><b>📍 Placera markering</b> + klick</td><td>Markering för den markerade raden</td></tr>
+      <tr><td>Klicka på en markering</td><td>Markera raden (och dess markeringar)</td></tr>
+      <tr><td>Dra en markering</td><td>Flytta den</td></tr>
+      <tr><td>Högerklick / <kbd>Delete</kbd></td><td>Ta bort markeringen</td></tr>
+      <tr><td>Klicka siffran i listan</td><td>Visa radens markeringar</td></tr>
+      <tr><td>Släpp bildfiler i bildytan</td><td>Lägg till bilder</td></tr>
     </table></section>
   </div>
   <div class="end"><button id="closeKeys">Stäng</button></div>
@@ -289,7 +339,7 @@ const ui = { tags: new Set(), tagMode: 'any', withChildren: false, search: '', s
 let prefs = { numbering: true, widths: {}, tagWidth: 220, indent: {} };
 const isIndented = f => !!(prefs.indent && prefs.indent[f.name]);
 
-function mkRow(level, values = {}, tags = []) { return { id: newId('r'), level, values, tags, collapsed: false }; }
+function mkRow(level, values = {}, tags = [], marks = []) { return { id: newId('r'), level, values, tags, marks, collapsed: false }; }
 function defaultState() {
   const f1 = { id: newId('f'), name: 'Namn' }, f2 = { id: newId('f'), name: 'Beskrivning' };
   return { fields: [f1, f2], rows: [mkRow(1)], levelName: 'Nivå', tagName: 'Taggar' };
@@ -297,12 +347,12 @@ function defaultState() {
 function idxOf(id) { return state.rows.findIndex(r => r.id === id); }
 function rowOfEl(el) { const tr = el.closest('tr'); return tr ? state.rows[idxOf(tr.dataset.id)] : null; }
 function subEnd(i) { const R = state.rows, l = R[i].level; let j = i + 1; while (j < R.length && R[j].level > l) j++; return j; }
-function normalize() { let p = 0; for (const r of state.rows) { r.level = clamp(parseInt(r.level) || 1, 1, p + 1); p = r.level; } }
+function normalize() { let p = 0; for (const r of state.rows) { r.marks = r.marks || []; r.tags = r.tags || []; r.level = clamp(parseInt(r.level) || 1, 1, p + 1); p = r.level; } }
 function fieldWidth(f, k) { return prefs.widths[f.name] || (k === 0 ? 320 : 200); }
 function dirty() { return version !== savedVersion; }
 
 /* ---------------- undo ---------------- */
-const snap = () => JSON.stringify({ fields: state.fields, rows: state.rows, levelName: state.levelName, tagName: state.tagName });
+const snap = () => JSON.stringify({ fields: state.fields, rows: state.rows, levelName: state.levelName, tagName: state.tagName, markName: state.markName || null });
 function pushUndo(s = snap()) { undoStack.push(s); if (undoStack.length > 300) undoStack.shift(); redoStack = []; updateUndoBtns(); }
 function undo() { if (!undoStack.length) return; redoStack.push(snap()); Object.assign(state, JSON.parse(undoStack.pop())); editSnap = null; markDirty(); render(); }
 function redo() { if (!redoStack.length) return; undoStack.push(snap()); Object.assign(state, JSON.parse(redoStack.pop())); editSnap = null; markDirty(); render(); }
@@ -338,9 +388,22 @@ function parseCSV(text, d = ';') {
 }
 const csvCell = v => { v = String(v ?? ''); return /[;"\r\n]|^\s|\s$/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
 function toCSV(list = state.rows) {
-  const lines = [[state.levelName, ...state.fields.map(f => f.name), state.tagName]];
-  for (const r of list) lines.push([r.level, ...state.fields.map(f => r.values[f.id] ?? ''), r.tags.join(', ')]);
+  const mk = !!state.markName;
+  const lines = [[state.levelName, ...state.fields.map(f => f.name), state.tagName, ...(mk ? [state.markName] : [])]];
+  for (const r of list) lines.push([r.level, ...state.fields.map(f => r.values[f.id] ?? ''), r.tags.join(', '), ...(mk ? [marksToStr(r.marks)] : [])]);
   return '﻿' + lines.map(l => l.map(csvCell).join(';')).join('\r\n') + '\r\n';
+}
+const MARK_ALIASES = ['bildmarkeringar', 'markeringar', 'bildmarkering', 'marks', 'markers'];
+// "bild.png@23.5,67.8 | bild2.jpg@10,5"  (x,y i procent av bildens bredd/höjd)
+const marksToStr = m => (m || []).map(k => `${k.img}@${+(k.x * 100).toFixed(2)},${+(k.y * 100).toFixed(2)}`).join(' | ');
+function parseMarks(s) {
+  const out = [];
+  for (const p of String(s || '').split('|')) {
+    const t = p.trim(), a = t.lastIndexOf('@'); if (a < 1) continue;
+    const [x, y] = t.slice(a + 1).split(',').map(Number);
+    if (isFinite(x) && isFinite(y)) out.push({ img: t.slice(0, a).trim(), x: clamp(x / 100, 0, 1), y: clamp(y / 100, 0, 1) });
+  }
+  return out;
 }
 const splitTags = s => [...new Set(String(s || '').split(/[,|]/).map(t => t.trim()).filter(Boolean))];
 
@@ -350,10 +413,11 @@ function stateFromCSV(text) {
   const header = data[0].map(h => h.trim());
   const li = header.findIndex(h => LEVEL_ALIASES.includes(h.toLowerCase()));
   const ti = header.findIndex(h => TAG_ALIASES.includes(h.toLowerCase()));
+  const mi = header.findIndex(h => MARK_ALIASES.includes(h.toLowerCase()));
   const used = new Set();
   const fields = [];
   header.forEach((h, i) => {
-    if (i === li || i === ti) return;
+    if (i === li || i === ti || i === mi) return;
     let name = h || 'Fält ' + (i + 1), base = name, k = 2;
     while (used.has(name.toLowerCase())) name = base + ' ' + k++;
     used.add(name.toLowerCase());
@@ -363,10 +427,10 @@ function stateFromCSV(text) {
   const rows = data.slice(1).map(r => {
     const values = {};
     for (const f of fields) values[f.id] = f.col >= 0 ? (r[f.col] ?? '') : '';
-    return mkRow(li >= 0 ? parseInt(r[li]) || 1 : 1, values, ti >= 0 ? splitTags(r[ti]) : []);
+    return mkRow(li >= 0 ? parseInt(r[li]) || 1 : 1, values, ti >= 0 ? splitTags(r[ti]) : [], mi >= 0 ? parseMarks(r[mi]) : []);
   });
   fields.forEach(f => delete f.col);
-  return { fields, rows, levelName: li >= 0 ? header[li] : 'Nivå', tagName: ti >= 0 ? header[ti] : 'Taggar' };
+  return { fields, rows, levelName: li >= 0 ? header[li] : 'Nivå', tagName: ti >= 0 ? header[ti] : 'Taggar', markName: mi >= 0 ? header[mi] : null };
 }
 async function decodeFile(file) {
   const buf = await file.arrayBuffer();
@@ -413,9 +477,12 @@ function computeView(ignoreCollapse = false) {
     visible.push(i);
     if (!ignoreCollapse && R[i].collapsed && kids[i]) hide = R[i].level;
   }
-  const num = new Array(n), cnt = [];
-  for (let i = 0; i < n; i++) { const l = R[i].level; cnt.length = l; cnt[l - 1] = (cnt[l - 1] || 0) + 1; num[i] = cnt.join('.'); }
-  return { visible, parent, kids, show, direct, num };
+  const num = new Array(n), cnt = [], markNo = new Array(n); let mc = 0;
+  for (let i = 0; i < n; i++) {
+    const l = R[i].level; cnt.length = l; cnt[l - 1] = (cnt[l - 1] || 0) + 1; num[i] = cnt.join('.');
+    if (R[i].marks && R[i].marks.length) markNo[i] = ++mc;
+  }
+  return { visible, parent, kids, show, direct, num, markNo };
 }
 
 /* ---------------- rendering ---------------- */
@@ -426,7 +493,7 @@ function render(focus) {
   const keep = focus || captureFocus();
   closeExpander();
   view = computeView(false);
-  renderHead(); renderBody(); renderLevels(); renderTagFilter(); renderSelBar(); updateStatus(); updateUndoBtns();
+  renderHead(); renderBody(); renderLevels(); renderTagFilter(); renderSelBar(); renderImages(); updateStatus(); updateUndoBtns();
   restoreFocus(keep);
 }
 function renderHead() {
@@ -444,11 +511,12 @@ function renderBody() {
     const r = R[i], kids = view.kids[i], ctx = view.show && !view.direct[i];
     const ind = (r.level - 1) * INDENT;
     const tg = kids ? `<button class="tg" tabindex="-1" title="${r.collapsed ? 'Visa' : 'Dölj'} underrader">${r.collapsed ? '▸' : '▾'}</button>` : `<button class="tg leaf" tabindex="-1">●</button>`;
+    const mkb = view.markNo[i] ? `<span class="mk" title="${r.marks.length} markering${r.marks.length > 1 ? 'ar' : ''} i bilderna – klicka för att visa">${view.markNo[i]}</span>` : '';
     const cnt = kids && r.collapsed ? `<span class="cnt" title="Dolda underrader">${subEnd(i) - i - 1}</span>` : '';
     const cells = F.map((f, k) => {
       const inp = `<input class="cell" data-f="${f.id}"${k === 0 ? ' data-first' : ''} value="${esc(r.values[f.id] || '')}">`;
       return k === 0
-        ? `<td><div class="tw"><span class="dh" draggable="true" title="Dra för att flytta (med underrader) – i sidled för att byta nivå" style="padding-left:${ind}px;background-size:${ind}px 100%">${tg}</span>${inp}${cnt}</div></td>`
+        ? `<td><div class="tw"><span class="dh" draggable="true" title="Dra för att flytta (med underrader) – i sidled för att byta nivå" style="padding-left:${ind}px;background-size:${ind}px 100%">${tg}</span>${inp}${mkb}${cnt}</div></td>`
         : isIndented(f) ? `<td><div class="ti" style="padding-left:${ind}px;background-size:${ind}px 100%">${inp}</div></td>`
         : `<td>${inp}</td>`;
     }).join('');
@@ -510,10 +578,12 @@ function restoreFocus(k) {
   if (k.s != null) try { el.setSelectionRange(k.s, k.e); } catch {}
   else if (k.end) { const n = el.value.length; el.setSelectionRange(n, n); }
 }
-function selectRow(id) {
-  ui.selected = id;
+function selectRow(id, mark = null) {
+  const changed = ui.selected !== id;
+  ui.selected = id; ui.selMark = mark;
   for (const tr of tbody.querySelectorAll('tr.sel')) tr.classList.remove('sel');
   const tr = tbody.querySelector(`tr[data-id="${id}"]`); if (tr) tr.classList.add('sel');
+  updateMarkSel(changed && !mark);
 }
 
 /* ---------------- row operations ---------------- */
@@ -659,6 +729,7 @@ tbody.addEventListener('click', e => {
   const t = e.target, tr = t.closest('tr'); if (!tr) return;
   const i = idxOf(tr.dataset.id), r = state.rows[i];
   if (t.matches('input.cell')) { maybeExpand(t); return; }
+  if (t.classList.contains('mk')) { selectRow(r.id); updateMarkSel(true, true); return; }
   if (t.classList.contains('ck')) {
     const vis = view.visible, pos = vis.indexOf(i), last = ui.lastCk ? vis.indexOf(idxOf(ui.lastCk)) : -1;
     if (e.shiftKey && last >= 0) setChecked(vis.slice(Math.min(pos, last), Math.max(pos, last) + 1).map(k => state.rows[k]), t.checked);
@@ -720,7 +791,7 @@ document.addEventListener('keydown', e => {
   if (i < 0 || !tr) return;
   const k = e.key, alt = { ArrowRight: indent, ArrowLeft: outdent, ArrowUp: moveUp, ArrowDown: moveDown };
   if (k === 'Enter') addRowAt(i, (e.ctrlKey || e.metaKey) ? 'child' : 'sib');
-  else if (k === 'Delete') deleteRow(i);
+  else if (k === 'Delete') ui.selMark ? removeMark(ui.selMark.id, ui.selMark.k) : deleteRow(i);
   else if (k === 'F2') { const el = tr.querySelector('input.cell'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
   else if (k === 'Escape') selectRow(null);
   else if (k === '?') $('#dlgKeys').showModal();
@@ -745,7 +816,7 @@ document.addEventListener('mousedown', e => {   // klick utanför listan avmarke
 tbody.addEventListener('dragstart', e => {
   const g = e.target.closest && e.target.closest('.grip, .dh'); if (!g) return;
   const tr = g.closest('tr'), i = idxOf(tr.dataset.id), end = subEnd(i);
-  drag = { kind: 'row', ids: new Set(state.rows.slice(i, end).map(r => r.id)), origLevel: state.rows[i].level, startX: e.clientX };
+  drag = { kind: 'row', first: tr.dataset.id, ids: new Set(state.rows.slice(i, end).map(r => r.id)), origLevel: state.rows[i].level, startX: e.clientX };
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('application/x-hierarkirator', tr.dataset.id);
   e.dataTransfer.setDragImage(tr, 16, 14);
@@ -807,6 +878,7 @@ function endDrag() {
   $('#dropline').style.display = 'none';
   for (const r of tbody.querySelectorAll('tr.dragging')) r.classList.remove('dragging');
   for (const th of thead.querySelectorAll('.drop-l,.drop-r')) th.classList.remove('drop-l', 'drop-r');
+  for (const b of document.querySelectorAll('.imgbox.dropok')) b.classList.remove('dropok');
 }
 main.addEventListener('dragover', e => {
   if (!drag || drag.kind === 'field') return;
@@ -926,11 +998,12 @@ document.addEventListener('keydown', e => {
 /* ---------------- files & saving ---------------- */
 const FS = 'showOpenFilePicker' in window;
 const pickerTypes = [{ description: 'CSV (semikolonseparerad)', accept: { 'text/csv': ['.csv'] } }];
-function loadState(s, name) {
+function loadState(s, name, noImages) {
   state = s; normalize();
   fileName = name; undoStack = []; redoStack = []; version = savedVersion = 0; saveError = null;
-  ui.tags.clear(); ui.search = ''; ui.selected = null; $('#search').value = '';
+  ui.tags.clear(); ui.search = ''; ui.selected = null; ui.selMark = null; $('#search').value = '';
   backupLocal(); render();
+  loadImages(noImages);
 }
 async function openFile() {
   if (!FS) return $('#fileInput').click();
@@ -975,13 +1048,14 @@ async function saveAs() {
   try {
     const h = await showSaveFilePicker({ suggestedName: fileName || 'lista.csv', types: pickerTypes });
     fileHandle = h; fileName = h.name; storeHandle(h);
+    if (images.length) storeImages();               // bilderna följer med till det nya filnamnet
     await save(true);
   } catch (e) { if (e.name !== 'AbortError') toast('Kunde inte spara: ' + e.message); }
 }
 async function newList() {
   if (state.rows.some(r => Object.values(r.values).some(Boolean)) && !confirm('Starta en ny, tom lista? (Den nuvarande filen påverkas inte.)')) return;
   fileHandle = null;
-  loadState(defaultState(), null);
+  loadState(defaultState(), null, true);
   if (FS) await saveAs();
 }
 $('#bNew').onclick = newList;
@@ -1052,7 +1126,8 @@ function renderFieldList() {
 }
 function nameTaken(name, exceptId) {
   const n = name.trim().toLowerCase();
-  return state.fields.some(f => f.id !== exceptId && f.name.toLowerCase() === n) || n === state.levelName.toLowerCase() || n === state.tagName.toLowerCase();
+  return state.fields.some(f => f.id !== exceptId && f.name.toLowerCase() === n) || n === state.levelName.toLowerCase() || n === state.tagName.toLowerCase()
+    || MARK_ALIASES.includes(n) || n === (state.markName || '').toLowerCase();
 }
 $('#addField').onclick = () => {
   const inp = $('#newField'), name = inp.value.trim();
@@ -1315,6 +1390,221 @@ $('#exDl').onclick = () => {
 };
 $('#closeExport').onclick = () => $('#dlgExport').close();
 
+/* ---------------- bilder & markeringar ---------------- */
+// Bilderna sparas i webbläsarens IndexedDB under listans filnamn; markeringarna sparas i CSV-filen.
+let images = [];            // [{name, blob, url}]
+let placing = false, pickFor = null, imgSig = '';
+const imgKey = () => 'imgs:' + (fileName || '');
+async function idbGet(key) {
+  try { const db = await idb(); return await new Promise(res => { const q = db.transaction('kv').objectStore('kv').get(key); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); } catch { return null; }
+}
+async function storeImages() {
+  try { const db = await idb(); db.transaction('kv', 'readwrite').objectStore('kv').put(images.map(i => ({ name: i.name, blob: i.blob })), imgKey()); }
+  catch { toast('Kunde inte spara bilderna i webbläsaren'); }
+}
+async function loadImages(none) {
+  for (const i of images) URL.revokeObjectURL(i.url);
+  images = [];
+  if (!none) {
+    const v = await idbGet(imgKey());
+    if (Array.isArray(v)) images = v.filter(i => i && i.blob).map(i => ({ name: i.name, blob: i.blob, url: URL.createObjectURL(i.blob) }));
+  }
+  render();
+}
+async function addImageFiles(files, asName) {
+  let added = 0;
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue;
+    const name = asName || f.name, ex = images.find(i => i.name === name);
+    if (ex) {
+      if (!asName && !confirm(`Det finns redan en bild som heter ”${name}”. Ersätt den?`)) continue;
+      URL.revokeObjectURL(ex.url); ex.blob = f; ex.url = URL.createObjectURL(f);
+    } else images.push({ name, blob: f, url: URL.createObjectURL(f) });
+    added++;
+    if (asName) break;
+  }
+  if (added) { await storeImages(); render(); }
+}
+function imageNames() {     // bilder + namn som markeringar pekar på men som saknas här
+  const names = images.map(i => i.name), set = new Set(names);
+  for (const r of state.rows) for (const m of r.marks) if (!set.has(m.img)) { set.add(m.img); names.push(m.img); }
+  return names;
+}
+function renderImages() {
+  const names = imageNames(), box = $('#imgs');
+  const sig = names.join('\n') + '|' + images.map(i => i.url).join();
+  if (sig !== imgSig) {
+    imgSig = sig;
+    box.innerHTML = names.map(n => {
+      const k = images.findIndex(i => i.name === n), im = images[k];
+      const btns = im
+        ? `<button data-im="up"${k === 0 ? ' disabled' : ''} title="Flytta upp">↑</button><button data-im="down"${k === images.length - 1 ? ' disabled' : ''} title="Flytta ner">↓</button><button data-im="del" title="Ta bort bilden">✕</button>`
+        : `<button data-im="pick">Välj bildfil…</button><button data-im="del" title="Ta bort markeringarna">✕</button>`;
+      return `<div class="imgcard" data-img="${esc(n)}"><div class="imghead"><b>${esc(n)}</b><span class="lbl cnt-m"></span><span style="flex:1"></span>${btns}</div>` +
+        (im ? `<div class="imgbox"><img src="${im.url}" draggable="false" alt=""><div class="mlayer"></div></div>`
+            : `<div class="missing">Bilden ”${esc(n)}” finns inte sparad i den här webbläsaren. Klicka ”Välj bildfil…” för att visa dess markeringar.</div>`) + `</div>`;
+    }).join('') || '<div class="lbl">Inga bilder ännu. Klicka ”Lägg till bild…” eller släpp bildfiler här.</div>';
+  }
+  const has = names.length > 0;
+  $('#split').hidden = !has;
+  $('#imgPane').style.height = has ? (prefs.imgPaneH || Math.round(innerHeight * 0.45)) + 'px' : 'auto';
+  box.style.setProperty('--imgw', (prefs.imgWidth || 100) + '%');
+  $('#imgW').value = String(prefs.imgWidth || 100);
+  renderMarkers();
+}
+function renderMarkers() {
+  const R = state.rows, per = new Map(), lf = state.fields[0];
+  let total = 0, shown = 0;
+  R.forEach((r, i) => r.marks.forEach((m, k) => {
+    total++;
+    if (view.direct && !view.direct[i]) return;      // bara framfiltrerade rader
+    shown++;
+    const cls = 'mark' + (ui.selected === r.id ? ' sel' : '') + (ui.selMark && ui.selMark.id === r.id && ui.selMark.k === k ? ' cur' : '');
+    if (!per.has(m.img)) per.set(m.img, []);
+    per.get(m.img).push(`<div class="${cls}" data-id="${r.id}" data-k="${k}" style="left:${m.x * 100}%;top:${m.y * 100}%" title="${esc(view.num[i] + ' ' + (r.values[lf.id] || ''))}">${view.markNo[i]}</div>`);
+  }));
+  for (const card of $('#imgs').querySelectorAll('.imgcard')) {
+    const arr = per.get(card.dataset.img) || [], ml = card.querySelector('.mlayer');
+    if (ml) ml.innerHTML = arr.join('');
+    card.querySelector('.cnt-m').textContent = arr.length ? `${arr.length} markering${arr.length > 1 ? 'ar' : ''}` : '';
+  }
+  $('#imgInfo').textContent = total ? `${shown}${shown !== total ? ' av ' + total : ''} markeringar visas` : '';
+}
+function updateMarkSel(scroll, force) {
+  const els = [];
+  for (const el of document.querySelectorAll('#imgs .mark')) {
+    const on = el.dataset.id === ui.selected;
+    el.classList.toggle('sel', on);
+    el.classList.toggle('cur', on && !!ui.selMark && +el.dataset.k === ui.selMark.k);
+    if (on) els.push(el);
+  }
+  if (!scroll || !els.length) return;
+  const pr = $('#imgPane').getBoundingClientRect();
+  const inView = el => { const r = el.getBoundingClientRect(); return r.top >= pr.top + 40 && r.bottom <= pr.bottom; };
+  if (force || !els.some(inView)) els[0].scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+}
+function selectFromMark(id, k) {
+  const i = idxOf(id); if (i < 0) return;
+  if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+  if (!tbody.querySelector(`tr[data-id="${id}"]`)) { expandAncestors(i); backupLocal(); render(); }
+  selectRow(id, { id, k });
+  const tr = tbody.querySelector(`tr[data-id="${id}"]`);
+  if (tr) tr.scrollIntoView({ block: 'nearest' });
+}
+function addMark(rowId, img, x, y) {
+  const r = state.rows[idxOf(rowId)]; if (!r) return;
+  mutate(() => { r.marks.push({ img, x, y }); if (!state.markName) state.markName = 'Bildmarkeringar'; });
+  selectRow(rowId, { id: rowId, k: r.marks.length - 1 });
+  if (!document.querySelector(`#imgs .mark[data-id="${rowId}"]`)) toast('Markeringen är dold eftersom raden inte matchar filtret');
+}
+function removeMark(rowId, k) {
+  const r = state.rows[idxOf(rowId)]; if (!r || !r.marks[k]) return;
+  mutate(() => r.marks.splice(k, 1));
+  selectRow(rowId);
+}
+function pointOn(box, e) {
+  const rc = box.querySelector('img').getBoundingClientRect();
+  return { x: clamp((e.clientX - rc.left) / rc.width, 0, 1), y: clamp((e.clientY - rc.top) / rc.height, 0, 1) };
+}
+
+$('#bAddImg').onclick = () => { pickFor = null; $('#imgInput').click(); };
+$('#imgInput').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; addImageFiles(fs, pickFor); pickFor = null; });
+$('#bPlace').onclick = () => {
+  placing = !placing;
+  $('#bPlace').classList.toggle('on', placing);
+  $('#imgs').classList.toggle('placing', placing);
+  if (placing && !ui.selected) toast('Markera en rad i listan och klicka sedan i en bild');
+};
+$('#imgW').addEventListener('change', e => { prefs.imgWidth = +e.target.value; savePrefs(); renderImages(); });
+$('#imgs').addEventListener('click', e => {
+  const b = e.target.closest('[data-im]'); if (!b) return;
+  const name = b.closest('.imgcard').dataset.img, k = images.findIndex(i => i.name === name);
+  const m = b.dataset.im;
+  if (m === 'pick') { pickFor = name; $('#imgInput').click(); }
+  else if (m === 'up' || m === 'down') {
+    const j = m === 'up' ? k - 1 : k + 1;
+    [images[k], images[j]] = [images[j], images[k]];
+    storeImages(); render();
+  } else if (m === 'del') {
+    const n = state.rows.reduce((a, r) => a + r.marks.filter(x => x.img === name).length, 0);
+    if (!confirm(`Ta bort bilden ”${name}”${n ? ` och dess ${n} markeringar` : ''}?`)) return;
+    if (k >= 0) { URL.revokeObjectURL(images[k].url); images.splice(k, 1); storeImages(); }
+    if (n) mutate(() => state.rows.forEach(r => r.marks = r.marks.filter(x => x.img !== name)));
+    else render();
+  }
+});
+$('#imgs').addEventListener('pointerdown', e => {
+  const mk = e.target.closest('.mark');
+  if (mk) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const box = mk.closest('.imgbox'), id = mk.dataset.id, k = +mk.dataset.k, sx = e.clientX, sy = e.clientY;
+    let moved = false;
+    mk.setPointerCapture(e.pointerId);
+    const mv = ev => {
+      if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 4) return;
+      moved = true; mk.classList.add('dragging');
+      const p = pointOn(box, ev); mk.style.left = p.x * 100 + '%'; mk.style.top = p.y * 100 + '%';
+    };
+    const up = ev => {
+      mk.removeEventListener('pointermove', mv); mk.removeEventListener('pointerup', up); mk.removeEventListener('pointercancel', up);
+      if (moved) { const p = pointOn(box, ev), r = state.rows[idxOf(id)]; if (r && r.marks[k]) mutate(() => { r.marks[k].x = p.x; r.marks[k].y = p.y; }); }
+      selectFromMark(id, k);
+    };
+    mk.addEventListener('pointermove', mv); mk.addEventListener('pointerup', up); mk.addEventListener('pointercancel', up);
+    return;
+  }
+  const box = e.target.closest('.imgbox');
+  if (box && placing && e.button === 0) {
+    e.preventDefault();
+    if (!ui.selected) return toast('Markera först en rad i listan');
+    const p = pointOn(box, e);
+    addMark(ui.selected, box.closest('.imgcard').dataset.img, p.x, p.y);
+  }
+});
+$('#imgs').addEventListener('contextmenu', e => {
+  const mk = e.target.closest('.mark'); if (!mk) return;
+  e.preventDefault();
+  removeMark(mk.dataset.id, +mk.dataset.k);
+});
+// dra rad (eller "+ Ny rad") till en bild = ny markering; dra bildfiler hit = nya bilder
+$('#imgPane').addEventListener('dragover', e => {
+  if (drag && (drag.kind === 'row' || drag.kind === 'new')) {
+    for (const b of document.querySelectorAll('.imgbox.dropok')) b.classList.remove('dropok');
+    const box = e.target.closest('.imgbox');
+    if (box) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; box.classList.add('dropok'); }
+    $('#dropline').style.display = 'none';
+    return;
+  }
+  if (!drag && e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }
+});
+$('#imgPane').addEventListener('drop', e => {
+  if (drag && (drag.kind === 'row' || drag.kind === 'new')) {
+    const box = e.target.closest('.imgbox'); if (!box) return;
+    e.preventDefault();
+    const p = pointOn(box, e), name = box.closest('.imgcard').dataset.img, kind = drag.kind, first = drag.first;
+    endDrag();
+    if (kind === 'row') return addMark(first, name, p.x, p.y);
+    const r = mutate(() => {
+      const n = mkRow(1, {}, [], [{ img: name, x: p.x, y: p.y }]);
+      state.rows.push(n); if (!state.markName) state.markName = 'Bildmarkeringar';
+      return n;
+    });
+    selectRow(r.id, { id: r.id, k: 0 });
+    restoreFocus({ id: r.id, f: state.fields[0].id });
+    return;
+  }
+  if (!drag && e.dataTransfer.files.length) { e.preventDefault(); addImageFiles([...e.dataTransfer.files]); }
+});
+$('#split').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  const sy = e.clientY, h0 = $('#imgPane').getBoundingClientRect().height, max = $('#panes').getBoundingClientRect().height - 120;
+  const sp = $('#split'); sp.setPointerCapture(e.pointerId);
+  const mv = ev => { prefs.imgPaneH = Math.round(clamp(h0 - (ev.clientY - sy), 80, max)); $('#imgPane').style.height = prefs.imgPaneH + 'px'; };
+  const up = () => { sp.removeEventListener('pointermove', mv); sp.removeEventListener('pointerup', up); savePrefs(); };
+  sp.addEventListener('pointermove', mv); sp.addEventListener('pointerup', up);
+});
+
 /* ---------------- misc ---------------- */
 let toastT;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3200); }
@@ -1330,6 +1620,7 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
     if (b.dirty) version = 1;
   } else state = defaultState();
   render();
+  loadImages();
   if (!FS) return;
   const h = await loadHandle();
   if (!h) return;

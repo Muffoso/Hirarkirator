@@ -18,3 +18,10 @@ Nivå;Namn;Beskrivning;Ansvarig;Taggar
 - Filen skrivs som UTF-8 med BOM, så att Excel visar å, ä och ö rätt. Den kan också läsa ANSI-filer som sparats från Excel.
 
 Se `exempel.csv`.
+
+## Bilder och markeringar
+
+Under listan kan du lägga till bilder och märka ut rader på dem med numrerade cirklar. Dra en rad till en bild, eller använd **📍 Placera markering**.
+
+- Markeringarna sparas i CSV-kolumnen `Bildmarkeringar`, i formatet `bild.png@x,y | bild2.jpg@x,y`. x och y anges i procent av bildens bredd och höjd.
+- Själva bildfilerna sparas i webbläsaren, kopplade till CSV-filens namn. Öppnar du listan i en annan webbläsare eller på en annan dator visas en platshållare med knappen **Välj bildfil…**.
