@@ -136,14 +136,17 @@ dialog h2{margin:0 0 6px;font-size:17px}
 #panes main{flex:1 1 0;min-height:80px}
 #split{flex:none;height:7px;cursor:row-resize;background:var(--border);border-top:1px solid var(--panel)}
 #split:hover{background:var(--accent)}
-#imgPane{flex:none;overflow:auto;background:var(--bg);border-top:1px solid var(--border)}
-.imgbar{position:sticky;top:0;z-index:7;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 14px;background:var(--panel);border-bottom:1px solid var(--border)}
-#imgs{padding:12px 14px;display:flex;flex-direction:column;gap:16px;--imgw:100%}
+#imgPane{flex:none;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);border-top:1px solid var(--border)}
+.imgbar{flex:none;z-index:7;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 14px;background:var(--panel);border-bottom:1px solid var(--border)}
+#imgScroll{flex:1 1 auto;min-height:0;overflow:auto}
+#imgNote{padding:12px 14px 0}
+#imgs{padding:12px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:16px;--z:1;--base:800px}
 #imgs.placing .imgbox{cursor:crosshair}
-.imgcard{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px}
-.imghead{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.imgcard{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px;width:max-content}
+.imghead{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
 .imghead button{padding:0 7px}
-.imgbox{position:relative;width:var(--imgw);max-width:100%;user-select:none}
+.imghead input[type=range]{width:110px}
+.imgbox{position:relative;width:calc(var(--base) * var(--s, 100) * var(--z) / 100);user-select:none}
 .imgbox img{display:block;width:100%;height:auto;-webkit-user-drag:none}
 .imgbox.dropok{outline:3px dashed var(--accent);outline-offset:2px}
 .mlayer{position:absolute;inset:0}
@@ -209,11 +212,14 @@ dialog h2{margin:0 0 6px;font-size:17px}
     <b>Bilder</b>
     <button id="bAddImg">＋ Lägg till bild…</button>
     <button id="bPlace" title="Klicka i en bild för att placera en markering för den markerade raden">📍 Placera markering</button>
-    <span class="lbl">Bredd:</span>
-    <select id="imgW"><option value="25">25 %</option><option value="33">33 %</option><option value="50">50 %</option><option value="75">75 %</option><option value="100">100 %</option></select>
+    <button id="bOnlySel" title="Visa bara de bilder där den markerade raden har markeringar">Bara bilder med markerad rad</button>
+    <span class="lbl">Zoom:</span><button id="bZoom" title="Ctrl + scrollhjul i bildytan zoomar · klicka för 100 %">100 %</button>
     <span class="lbl" id="imgInfo"></span>
   </div>
-  <div id="imgs"></div>
+  <div id="imgScroll">
+    <div id="imgNote" class="lbl" hidden></div>
+    <div id="imgs"></div>
+  </div>
 </section>
 </div>
 <input type="file" id="imgInput" accept="image/*" multiple hidden>
@@ -279,6 +285,8 @@ dialog h2{margin:0 0 6px;font-size:17px}
       <tr><td>Högerklick / <kbd>Delete</kbd></td><td>Ta bort markeringen</td></tr>
       <tr><td>Klicka siffran i listan</td><td>Visa radens markeringar</td></tr>
       <tr><td>Släpp bildfiler i bildytan</td><td>Lägg till bilder</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + scrollhjul</td><td>Zooma hela bildytan (klicka zoomknappen för 100 %)</td></tr>
+      <tr><td>Skjutreglaget vid en bild</td><td>Skala just den bilden (dubbelklick = 100 %)</td></tr>
     </table></section>
   </div>
   <div class="end"><button id="closeKeys">Stäng</button></div>
@@ -331,7 +339,7 @@ const hue = t => { let h = 7; for (const c of t) h = (h * 31 + c.charCodeAt(0)) 
 
 /* ---------------- state ---------------- */
 let state;                 // {fields:[{id,name}], rows:[{id,level,values,tags,collapsed}], levelName, tagName}
-let fileHandle = null, fileName = null;
+let fileHandle = null, fileName = null, pendingHandle = null;
 let version = 0, savedVersion = 0, saving = false, lastSaved = null, saveError = null;
 let undoStack = [], redoStack = [], editSnap = null;
 let view = null, drag = null;
@@ -1006,11 +1014,13 @@ function loadState(s, name, noImages) {
   loadImages(noImages);
 }
 async function openFile() {
+  if (!fileHandle && dirty() && state.rows.length &&
+      !confirm('Listan har ändringar som inte sparats till någon fil.\nÖppna en annan fil ändå? Ändringarna går då förlorade.\n\n(Avbryt och klicka ”Fortsätt med …” eller ”Spara som…” för att behålla dem.)')) return;
   if (!FS) return $('#fileInput').click();
   try {
     const [h] = await showOpenFilePicker({ types: pickerTypes, multiple: false });
     const text = await decodeFile(await h.getFile());
-    fileHandle = h;
+    fileHandle = h; pendingHandle = null; $('#bReconnect').hidden = true;
     loadState(stateFromCSV(text), h.name);
     storeHandle(h);
     await ensureWrite(true);
@@ -1080,6 +1090,9 @@ function updateStatus() {
     tx.innerHTML = `${name}Kunde inte spara: ${esc(saveError.message)}`;
     $('#bPerm').hidden = false;
     $('#bPerm').textContent = saveError.perm ? 'Ge skrivbehörighet' : 'Försök igen';
+  } else if (!fileHandle && pendingHandle) {
+    st.classList.add('err');
+    tx.innerHTML = `Inte kopplad till <b>${esc(pendingHandle.name)}</b> – ändringar sparas bara i webbläsaren. Klicka <i>Fortsätt med …</i>`;
   } else if (!fileHandle) {
     st.classList.add('dirty');
     tx.innerHTML = `${name}${rows} · ${FS ? 'ingen fil kopplad – välj <i>Spara som…</i> för autosparning' : 'sparas bara i webbläsaren tills du klickar Spara'}`;
@@ -1391,24 +1404,58 @@ $('#exDl').onclick = () => {
 $('#closeExport').onclick = () => $('#dlgExport').close();
 
 /* ---------------- bilder & markeringar ---------------- */
-// Bilderna sparas i webbläsarens IndexedDB under listans filnamn; markeringarna sparas i CSV-filen.
-let images = [];            // [{name, blob, url}]
-let placing = false, pickFor = null, imgSig = '';
+// Markeringarna sparas i CSV-filen. Bildfilerna sparas i webbläsarens IndexedDB:
+//   'imgs:<listans filnamn>'            → bildnamnen i visningsordning
+//   'img:<listans filnamn>\0<bildnamn>' → själva bilden
+// Saknas en bild under listans namn letas den upp via bildnamnet bland alla sparade bilder.
+let images = [];            // [{name, blob, url, storedKey}]
+let placing = false, pickFor = null, imgSig = '', imgLoadTok = 0;
 const imgKey = () => 'imgs:' + (fileName || '');
-async function idbGet(key) {
-  try { const db = await idb(); return await new Promise(res => { const q = db.transaction('kv').objectStore('kv').get(key); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); } catch { return null; }
+const blobKey = name => 'img:' + (fileName || '') + '\u0000' + name;
+function idbReq(mode, fn) {
+  return idb().then(db => new Promise((res, rej) => {
+    const tx = db.transaction('kv', mode), rq = fn(tx.objectStore('kv'));
+    tx.oncomplete = () => { db.close(); res(rq && rq.result); };
+    tx.onerror = tx.onabort = () => { db.close(); rej(tx.error); };
+  }));
 }
+const idbGet = k => idbReq('readonly', s => s.get(k)).catch(() => null);
+const idbPut = (k, v) => idbReq('readwrite', s => s.put(v, k));
+const idbKeys = () => idbReq('readonly', s => s.getAllKeys()).catch(() => []);
 async function storeImages() {
-  try { const db = await idb(); db.transaction('kv', 'readwrite').objectStore('kv').put(images.map(i => ({ name: i.name, blob: i.blob })), imgKey()); }
-  catch { toast('Kunde inte spara bilderna i webbläsaren'); }
+  try {
+    for (const im of images) {
+      const k = blobKey(im.name);
+      if (im.storedKey !== k) { await idbPut(k, im.blob); im.storedKey = k; }
+    }
+    await idbPut(imgKey(), images.map(i => i.name));
+  } catch (e) { toast('Kunde inte spara bilderna i webbläsaren: ' + (e && e.message || e)); }
 }
 async function loadImages(none) {
-  for (const i of images) URL.revokeObjectURL(i.url);
-  images = [];
+  const tok = ++imgLoadTok, list = [];
   if (!none) {
-    const v = await idbGet(imgKey());
-    if (Array.isArray(v)) images = v.filter(i => i && i.blob).map(i => ({ name: i.name, blob: i.blob, url: URL.createObjectURL(i.blob) }));
+    const v = await idbGet(imgKey()), names = [], legacy = new Map();
+    if (Array.isArray(v)) for (const it of v) {
+      if (typeof it === 'string') names.push(it);
+      else if (it && it.blob) { names.push(it.name); legacy.set(it.name, it.blob); }   // äldre format
+    }
+    for (const r of state.rows) for (const m of r.marks) if (!names.includes(m.img)) names.push(m.img);
+    let keys = null;
+    for (const n of names) {
+      let blob = legacy.get(n), storedKey = null;
+      if (!blob) { blob = await idbGet(blobKey(n)); if (blob) storedKey = blobKey(n); }
+      if (!blob) {
+        keys = keys || await idbKeys();
+        const k = keys.find(k => typeof k === 'string' && k.startsWith('img:') && k.endsWith('\u0000' + n));
+        if (k) blob = await idbGet(k);
+      }
+      if (blob) list.push({ name: n, blob, url: URL.createObjectURL(blob), storedKey });
+    }
   }
+  if (tok !== imgLoadTok) { list.forEach(i => URL.revokeObjectURL(i.url)); return; }   // en nyare inläsning har startat
+  for (const i of images) URL.revokeObjectURL(i.url);
+  images = list;
+  if (images.some(i => !i.storedKey)) storeImages();       // kopiera in under listans namn
   render();
 }
 async function addImageFiles(files, asName) {
@@ -1418,8 +1465,8 @@ async function addImageFiles(files, asName) {
     const name = asName || f.name, ex = images.find(i => i.name === name);
     if (ex) {
       if (!asName && !confirm(`Det finns redan en bild som heter ”${name}”. Ersätt den?`)) continue;
-      URL.revokeObjectURL(ex.url); ex.blob = f; ex.url = URL.createObjectURL(f);
-    } else images.push({ name, blob: f, url: URL.createObjectURL(f) });
+      URL.revokeObjectURL(ex.url); ex.blob = f; ex.url = URL.createObjectURL(f); ex.storedKey = null;
+    } else images.push({ name, blob: f, url: URL.createObjectURL(f), storedKey: null });
     added++;
     if (asName) break;
   }
@@ -1430,26 +1477,32 @@ function imageNames() {     // bilder + namn som markeringar pekar på men som s
   for (const r of state.rows) for (const m of r.marks) if (!set.has(m.img)) { set.add(m.img); names.push(m.img); }
   return names;
 }
+const imgScale = n => (prefs.imgScale && prefs.imgScale[n]) || 100;
+function setImgBase() {
+  $('#imgs').style.setProperty('--base', Math.max(200, $('#imgScroll').clientWidth - 48) + 'px');
+  $('#imgs').style.setProperty('--z', prefs.imgZoom || 1);
+  $('#bZoom').textContent = Math.round((prefs.imgZoom || 1) * 100) + ' %';
+}
 function renderImages() {
   const names = imageNames(), box = $('#imgs');
   const sig = names.join('\n') + '|' + images.map(i => i.url).join();
   if (sig !== imgSig) {
     imgSig = sig;
     box.innerHTML = names.map(n => {
-      const k = images.findIndex(i => i.name === n), im = images[k];
+      const k = images.findIndex(i => i.name === n), im = images[k], s = imgScale(n);
       const btns = im
-        ? `<button data-im="up"${k === 0 ? ' disabled' : ''} title="Flytta upp">↑</button><button data-im="down"${k === images.length - 1 ? ' disabled' : ''} title="Flytta ner">↓</button><button data-im="del" title="Ta bort bilden">✕</button>`
+        ? `<input type="range" class="isc" min="10" max="300" step="5" value="${s}" title="Bildens storlek"><span class="lbl iscv">${s} %</span>` +
+          `<button data-im="up"${k === 0 ? ' disabled' : ''} title="Flytta upp">↑</button><button data-im="down"${k === images.length - 1 ? ' disabled' : ''} title="Flytta ner">↓</button><button data-im="del" title="Ta bort bilden">✕</button>`
         : `<button data-im="pick">Välj bildfil…</button><button data-im="del" title="Ta bort markeringarna">✕</button>`;
       return `<div class="imgcard" data-img="${esc(n)}"><div class="imghead"><b>${esc(n)}</b><span class="lbl cnt-m"></span><span style="flex:1"></span>${btns}</div>` +
-        (im ? `<div class="imgbox"><img src="${im.url}" draggable="false" alt=""><div class="mlayer"></div></div>`
+        (im ? `<div class="imgbox" style="--s:${s}"><img src="${im.url}" draggable="false" alt=""><div class="mlayer"></div></div>`
             : `<div class="missing">Bilden ”${esc(n)}” finns inte sparad i den här webbläsaren. Klicka ”Välj bildfil…” för att visa dess markeringar.</div>`) + `</div>`;
     }).join('') || '<div class="lbl">Inga bilder ännu. Klicka ”Lägg till bild…” eller släpp bildfiler här.</div>';
   }
   const has = names.length > 0;
   $('#split').hidden = !has;
   $('#imgPane').style.height = has ? (prefs.imgPaneH || Math.round(innerHeight * 0.45)) + 'px' : 'auto';
-  box.style.setProperty('--imgw', (prefs.imgWidth || 100) + '%');
-  $('#imgW').value = String(prefs.imgWidth || 100);
+  setImgBase();
   renderMarkers();
 }
 function renderMarkers() {
@@ -1469,8 +1522,19 @@ function renderMarkers() {
     card.querySelector('.cnt-m').textContent = arr.length ? `${arr.length} markering${arr.length > 1 ? 'ar' : ''}` : '';
   }
   $('#imgInfo').textContent = total ? `${shown}${shown !== total ? ' av ' + total : ''} markeringar visas` : '';
+  applyImgFilter();
+}
+function applyImgFilter() {       // "Bara bilder med markerad rad"
+  const on = !!prefs.imgOnlySel, r = on && ui.selected ? state.rows[idxOf(ui.selected)] : null;
+  const set = new Set(r ? r.marks.map(m => m.img) : []);
+  for (const c of $('#imgs').querySelectorAll('.imgcard')) c.hidden = !!r && !set.has(c.dataset.img);
+  const note = $('#imgNote');
+  note.hidden = !on || (r && set.size > 0);
+  note.textContent = !r ? 'Markera en rad i listan för att se bilderna där den förekommer. (Alla bilder visas.)' : 'Den markerade raden har inga markeringar i bilderna.';
+  $('#bOnlySel').classList.toggle('on', on);
 }
 function updateMarkSel(scroll, force) {
+  applyImgFilter();
   const els = [];
   for (const el of document.querySelectorAll('#imgs .mark')) {
     const on = el.dataset.id === ui.selected;
@@ -1479,9 +1543,9 @@ function updateMarkSel(scroll, force) {
     if (on) els.push(el);
   }
   if (!scroll || !els.length) return;
-  const pr = $('#imgPane').getBoundingClientRect();
-  const inView = el => { const r = el.getBoundingClientRect(); return r.top >= pr.top + 40 && r.bottom <= pr.bottom; };
-  if (force || !els.some(inView)) els[0].scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+  const pr = $('#imgScroll').getBoundingClientRect();
+  const inView = el => { const r = el.getBoundingClientRect(); return r.top >= pr.top && r.bottom <= pr.bottom && r.left >= pr.left && r.right <= pr.right; };
+  if (force || !els.some(inView)) els[0].scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
 }
 function selectFromMark(id, k) {
   const i = idxOf(id); if (i < 0) return;
@@ -1491,16 +1555,20 @@ function selectFromMark(id, k) {
   const tr = tbody.querySelector(`tr[data-id="${id}"]`);
   if (tr) tr.scrollIntoView({ block: 'nearest' });
 }
+let qsT;
+function quickSave() { clearTimeout(qsT); qsT = setTimeout(() => save(false), 700); }   // markeringar sparas direkt
 function addMark(rowId, img, x, y) {
   const r = state.rows[idxOf(rowId)]; if (!r) return;
   mutate(() => { r.marks.push({ img, x, y }); if (!state.markName) state.markName = 'Bildmarkeringar'; });
   selectRow(rowId, { id: rowId, k: r.marks.length - 1 });
+  quickSave();
   if (!document.querySelector(`#imgs .mark[data-id="${rowId}"]`)) toast('Markeringen är dold eftersom raden inte matchar filtret');
 }
 function removeMark(rowId, k) {
   const r = state.rows[idxOf(rowId)]; if (!r || !r.marks[k]) return;
   mutate(() => r.marks.splice(k, 1));
   selectRow(rowId);
+  quickSave();
 }
 function pointOn(box, e) {
   const rc = box.querySelector('img').getBoundingClientRect();
@@ -1515,7 +1583,31 @@ $('#bPlace').onclick = () => {
   $('#imgs').classList.toggle('placing', placing);
   if (placing && !ui.selected) toast('Markera en rad i listan och klicka sedan i en bild');
 };
-$('#imgW').addEventListener('change', e => { prefs.imgWidth = +e.target.value; savePrefs(); renderImages(); });
+$('#bOnlySel').onclick = () => { prefs.imgOnlySel = !prefs.imgOnlySel; savePrefs(); applyImgFilter(); updateMarkSel(true); };
+let prefsT;
+const savePrefsSoon = () => { clearTimeout(prefsT); prefsT = setTimeout(savePrefs, 400); };
+function setZoom(z) { prefs.imgZoom = clamp(z, 0.1, 10); setImgBase(); savePrefsSoon(); }
+$('#bZoom').onclick = () => setZoom(1);
+$('#imgScroll').addEventListener('wheel', e => {     // Ctrl + scrollhjul = zooma hela bildytan
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  const sc = $('#imgScroll'), r = sc.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  const fx = (sc.scrollLeft + mx) / sc.scrollWidth, fy = (sc.scrollTop + my) / sc.scrollHeight;
+  setZoom((prefs.imgZoom || 1) * Math.exp(-clamp(e.deltaY, -300, 300) * 0.0015));
+  sc.scrollLeft = fx * sc.scrollWidth - mx; sc.scrollTop = fy * sc.scrollHeight - my;   // zooma kring muspekaren
+}, { passive: false });
+window.addEventListener('resize', setImgBase);
+$('#imgs').addEventListener('input', e => {          // skala en enskild bild
+  if (!e.target.classList.contains('isc')) return;
+  const card = e.target.closest('.imgcard'), v = +e.target.value;
+  card.querySelector('.imgbox').style.setProperty('--s', v);
+  card.querySelector('.iscv').textContent = v + ' %';
+  prefs.imgScale = prefs.imgScale || {}; prefs.imgScale[card.dataset.img] = v; savePrefsSoon();
+});
+$('#imgs').addEventListener('dblclick', e => {        // dubbelklick på skjutreglaget = 100 %
+  if (!e.target.classList.contains('isc')) return;
+  e.target.value = 100; e.target.dispatchEvent(new Event('input', { bubbles: true }));
+});
 $('#imgs').addEventListener('click', e => {
   const b = e.target.closest('[data-im]'); if (!b) return;
   const name = b.closest('.imgcard').dataset.img, k = images.findIndex(i => i.name === name);
@@ -1529,7 +1621,7 @@ $('#imgs').addEventListener('click', e => {
     const n = state.rows.reduce((a, r) => a + r.marks.filter(x => x.img === name).length, 0);
     if (!confirm(`Ta bort bilden ”${name}”${n ? ` och dess ${n} markeringar` : ''}?`)) return;
     if (k >= 0) { URL.revokeObjectURL(images[k].url); images.splice(k, 1); storeImages(); }
-    if (n) mutate(() => state.rows.forEach(r => r.marks = r.marks.filter(x => x.img !== name)));
+    if (n) { mutate(() => state.rows.forEach(r => r.marks = r.marks.filter(x => x.img !== name))); quickSave(); }
     else render();
   }
 });
@@ -1548,7 +1640,10 @@ $('#imgs').addEventListener('pointerdown', e => {
     };
     const up = ev => {
       mk.removeEventListener('pointermove', mv); mk.removeEventListener('pointerup', up); mk.removeEventListener('pointercancel', up);
-      if (moved) { const p = pointOn(box, ev), r = state.rows[idxOf(id)]; if (r && r.marks[k]) mutate(() => { r.marks[k].x = p.x; r.marks[k].y = p.y; }); }
+      if (moved) {
+        const p = pointOn(box, ev), r = state.rows[idxOf(id)];
+        if (r && r.marks[k]) { mutate(() => { r.marks[k].x = p.x; r.marks[k].y = p.y; }); quickSave(); }
+      }
       selectFromMark(id, k);
     };
     mk.addEventListener('pointermove', mv); mk.addEventListener('pointerup', up); mk.addEventListener('pointercancel', up);
@@ -1592,6 +1687,7 @@ $('#imgPane').addEventListener('drop', e => {
     });
     selectRow(r.id, { id: r.id, k: 0 });
     restoreFocus({ id: r.id, f: state.fields[0].id });
+    quickSave();
     return;
   }
   if (!drag && e.dataTransfer.files.length) { e.preventDefault(); addImageFiles([...e.dataTransfer.files]); }
@@ -1601,7 +1697,7 @@ $('#split').addEventListener('pointerdown', e => {
   const sy = e.clientY, h0 = $('#imgPane').getBoundingClientRect().height, max = $('#panes').getBoundingClientRect().height - 120;
   const sp = $('#split'); sp.setPointerCapture(e.pointerId);
   const mv = ev => { prefs.imgPaneH = Math.round(clamp(h0 - (ev.clientY - sy), 80, max)); $('#imgPane').style.height = prefs.imgPaneH + 'px'; };
-  const up = () => { sp.removeEventListener('pointermove', mv); sp.removeEventListener('pointerup', up); savePrefs(); };
+  const up = () => { sp.removeEventListener('pointermove', mv); sp.removeEventListener('pointerup', up); setImgBase(); savePrefs(); };
   sp.addEventListener('pointermove', mv); sp.addEventListener('pointerup', up);
 });
 
@@ -1624,23 +1720,34 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
   if (!FS) return;
   const h = await loadHandle();
   if (!h) return;
+  pendingHandle = h;
   const btn = $('#bReconnect');
-  btn.textContent = `Fortsätt med ${h.name}`;
-  btn.title = 'Återanslut till senast använda fil (läser in den och slår på autosparning)';
-  btn.hidden = false;
-  btn.onclick = async () => {
+  // Koppla till den senast använda filen. Ändringar som gjorts i webbläsaren sedan dess
+  // (dirty() just nu – inte vid sidladdningen) skrivs till filen i stället för att skrivas över.
+  const connect = async ask => {
     try {
-      if (await h.requestPermission({ mode: 'readwrite' }) !== 'granted') return toast('Behörighet nekades');
-      if (b && b.dirty && b.fileName === h.name &&
-          confirm('Det finns osparade ändringar i webbläsaren för den här filen.\n\nOK = behåll ändringarna och skriv dem till filen\nAvbryt = läs in filen som den är')) {
-        fileHandle = h; fileName = h.name; await save(true);
-      } else {
-        fileHandle = h;
-        loadState(stateFromCSV(await decodeFile(await h.getFile())), h.name);
+      const o = { mode: 'readwrite' };
+      if (await h.queryPermission(o) !== 'granted') {
+        if (!ask) return false;
+        if (await h.requestPermission(o) !== 'granted') { toast('Behörighet nekades'); return false; }
       }
-      btn.hidden = true; updateStatus();
-    } catch (e) { toast('Kunde inte öppna filen: ' + e.message); }
+      const same = fileName === h.name;
+      if (!same && dirty()) {
+        if (!ask) return false;
+        if (!confirm(`Listan i webbläsaren (${fileName || 'namnlös'}) har ändringar som inte sparats till någon fil.\nÖppna ${h.name} ändå? Ändringarna går då förlorade.`)) return false;
+      }
+      if (same && dirty()) { fileHandle = h; await save(true); }
+      else { fileHandle = h; loadState(stateFromCSV(await decodeFile(await h.getFile())), h.name); }
+      pendingHandle = null; btn.hidden = true; updateStatus();
+      return true;
+    } catch (e) { toast('Kunde inte öppna filen: ' + e.message); return false; }
   };
+  if (await connect(false)) return;               // Chrome har kvar behörigheten → koppla direkt
+  btn.textContent = `Fortsätt med ${h.name}`;
+  btn.title = 'Koppla till senast använda fil igen (slår på autosparning)';
+  btn.hidden = false;
+  btn.onclick = () => connect(true);
+  updateStatus();
 })();
 </script>
 </body>
