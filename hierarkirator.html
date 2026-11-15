@@ -140,14 +140,23 @@ dialog h2{margin:0 0 6px;font-size:17px}
 .imgbar{flex:none;z-index:7;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 14px;background:var(--panel);border-bottom:1px solid var(--border)}
 #imgScroll{flex:1 1 auto;min-height:0;overflow:auto}
 #imgNote{padding:12px 14px 0}
-#imgs{padding:12px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:16px;--z:1;--base:800px}
+#imgs{position:relative;margin:12px 14px;min-height:20px}
 #imgs.placing .imgbox{cursor:crosshair}
-.imgcard{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px;width:max-content}
-.imghead{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
-.imghead button{padding:0 7px}
-.imghead input[type=range]{width:110px}
-.imgbox{position:relative;width:calc(var(--base) * var(--s, 100) * var(--z) / 100);user-select:none}
-.imgbox img{display:block;width:100%;height:auto;-webkit-user-drag:none}
+.imgcard{position:absolute;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px}
+.imghead{display:flex;align-items:center;gap:4px;margin-bottom:5px;height:22px;white-space:nowrap}
+.imghead b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.imghead .cnt-m{font-size:11px;flex:none}
+.imghead button{padding:0 5px;font-size:12px;line-height:1.3;flex:none}
+.imgbox{position:relative;user-select:none;margin:0 auto}
+.imgbox img{display:block;width:100%;height:100%;-webkit-user-drag:none}
+.imgcard .missing{width:240px;padding:16px}
+.imgtop{display:flex;align-items:center;gap:6px;height:20px;margin-bottom:2px}
+.imgtop .isc{width:110px;flex:none;margin:0}
+.imgtop .iscv{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.imgcard.resizing{z-index:5;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.imgcard.picked{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.imgcard.picked.resizing{box-shadow:0 0 0 2px var(--accent),0 6px 24px rgba(0,0,0,.25)}
+#zoomR{width:170px}
 .imgbox.dropok{outline:3px dashed var(--accent);outline-offset:2px}
 .mlayer{position:absolute;inset:0}
 .missing{padding:24px;color:var(--muted);border:1px dashed var(--border);border-radius:6px}
@@ -210,10 +219,14 @@ dialog h2{margin:0 0 6px;font-size:17px}
 <section id="imgPane">
   <div class="imgbar">
     <b>Bilder</b>
+    <button id="bDir" title="Välj mappen där bilderna ligger – bilderna hittas då via namnen i CSV-filen">📁 Välj bildmapp…</button>
     <button id="bAddImg">＋ Lägg till bild…</button>
     <button id="bPlace" title="Klicka i en bild för att placera en markering för den markerade raden">📍 Placera markering</button>
     <button id="bOnlySel" title="Visa bara de bilder där den markerade raden har markeringar">Bara bilder med markerad rad</button>
-    <span class="lbl">Zoom:</span><button id="bZoom" title="Ctrl + scrollhjul i bildytan zoomar · klicka för 100 %">100 %</button>
+    <span class="lbl">Zoom:</span><input type="range" id="zoomR" min="0" max="1000" title="Zooma bildytan (även Ctrl + scrollhjul). Klicka på en bild för att zooma bara den med Ctrl + scrollhjul.">
+    <button id="bZoom" title="Klicka för 100 % (bildernas verkliga storlek)">100 %</button>
+    <button id="bFit" title="Anpassa zoomen så att bilderna ryms i bildytans bredd">Anpassa</button>
+    <button id="bExpImg" title="Ladda ner bilderna med siffermarkeringarna (ZIP) inklusive teckenförklaring">⤓ Exportera bilder</button>
     <span class="lbl" id="imgInfo"></span>
   </div>
   <div id="imgScroll">
@@ -285,8 +298,10 @@ dialog h2{margin:0 0 6px;font-size:17px}
       <tr><td>Högerklick / <kbd>Delete</kbd></td><td>Ta bort markeringen</td></tr>
       <tr><td>Klicka siffran i listan</td><td>Visa radens markeringar</td></tr>
       <tr><td>Släpp bildfiler i bildytan</td><td>Lägg till bilder</td></tr>
-      <tr><td><kbd>Ctrl</kbd> + scrollhjul</td><td>Zooma hela bildytan (klicka zoomknappen för 100 %)</td></tr>
-      <tr><td>Skjutreglaget vid en bild</td><td>Skala just den bilden (dubbelklick = 100 %)</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + scrollhjul / zoomreglaget</td><td>Zooma bildytan (2–400 %). <b>Anpassa</b> = ryms i bredd, procentknappen = 100 %</td></tr>
+      <tr><td>Klicka på en bild</td><td>Markera bilden – <kbd>Ctrl</kbd> + scrollhjul zoomar då bara den. Klick på tom yta / <kbd>Esc</kbd> avmarkerar</td></tr>
+      <tr><td>Reglaget under en bild</td><td>Bildens storlek i förhållande till de andra (dubbelklick = 100 %)</td></tr>
+      <tr><td><b>⤓ Exportera bilder</b> / <b>⤓</b> på en bild</td><td>Ladda ner bilderna med siffermarkeringar (ZIP med teckenförklaring)</td></tr>
     </table></section>
   </div>
   <div class="end"><button id="closeKeys">Stäng</button></div>
@@ -298,6 +313,7 @@ dialog h2{margin:0 0 6px;font-size:17px}
     <label>Format
       <select id="exFormat">
         <option value="xlsx">Excel (.xlsx) – grupperad per nivå</option>
+        <option value="imgzip">Bilder med siffermarkeringar (ZIP)</option>
         <option value="md">Markdown – punktlista</option>
         <option value="txt">Text med indrag (tabb)</option>
         <option value="num">Numrerad disposition (1.2.3)</option>
@@ -1011,6 +1027,7 @@ function loadState(s, name, noImages) {
   fileName = name; undoStack = []; redoStack = []; version = savedVersion = 0; saveError = null;
   ui.tags.clear(); ui.search = ''; ui.selected = null; ui.selMark = null; $('#search').value = '';
   backupLocal(); render();
+  imgDir = imgDirPending = null;          // bildmappen hör till listan – läses in på nytt
   loadImages(noImages);
 }
 async function openFile() {
@@ -1059,6 +1076,7 @@ async function saveAs() {
     const h = await showSaveFilePicker({ suggestedName: fileName || 'lista.csv', types: pickerTypes });
     fileHandle = h; fileName = h.name; storeHandle(h);
     if (images.length) storeImages();               // bilderna följer med till det nya filnamnet
+    if (imgDir) idbPut(dirKey(), imgDir).catch(() => {});
     await save(true);
   } catch (e) { if (e.name !== 'AbortError') toast('Kunde inte spara: ' + e.message); }
 }
@@ -1302,7 +1320,7 @@ function zipStore(files) {   // files: [{name, data:string}]
         date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
   let off = 0;
   for (const f of files) {
-    const name = enc.encode(f.name), data = enc.encode(f.data), crc = crc32(data);
+    const name = enc.encode(f.name), data = typeof f.data === 'string' ? enc.encode(f.data) : f.data, crc = crc32(data);
     const h = new DataView(new ArrayBuffer(30));
     h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
     h.setUint16(10, time, true); h.setUint16(12, date, true); h.setUint32(14, crc, true);
@@ -1379,9 +1397,16 @@ function buildXlsx(list, lf, others, incT) {
 const EXT = { xlsx: 'xlsx', md: 'md', txt: 'txt', num: 'txt', html: 'html', json: 'json', opml: 'opml', cols: 'csv', csv: 'csv' };
 const MIME = { xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', md: 'text/markdown', txt: 'text/plain', num: 'text/plain', html: 'text/html', json: 'application/json', opml: 'text/x-opml', cols: 'text/csv', csv: 'text/csv' };
 function refreshExport() {
-  const xl = $('#exFormat').value === 'xlsx';
-  $('#exCopy').disabled = xl;
-  if (xl) {
+  const xl = $('#exFormat').value === 'xlsx', iz = $('#exFormat').value === 'imgzip';
+  $('#exCopy').disabled = xl || iz;
+  if (iz) {
+    const a = imgExportArgs();
+    if (!a.names.length) { $('#exOut').value = 'Det finns inga bilder att exportera. Lägg till bilder i bildytan under listan.'; return; }
+    const per = a.names.map(n => { const c = visibleMarks(n, a.rows).length; return `  ${n}: ${c} markering${c === 1 ? '' : 'ar'}`; });
+    const scopeTxt = { all: 'alla rader', filtered: 'rader som matchar filtret', visible: 'rader som syns i listan' }[a.scope];
+    $('#exOut').value = `ZIP-fil med ${a.names.length} bild${a.names.length > 1 ? 'er' : ''} i full upplösning, med siffermarkeringar för ${scopeTxt}:\n\n${per.join('\n')}\n\n` +
+      `+ teckenforklaring.csv: Nr, Nr i listan, ${a.opt.label.name}${a.opt.fields ? ', övriga fält' : ''}${a.opt.tags ? ', ' + state.tagName : ''}, Bilder.\n\nKlicka ”Ladda ner”.`;
+  } else if (xl) {
     const n = exportRows($('#exScope').value).length;
     $('#exOut').value = `Excel-fil med ${n} rader.\n\nKolumner: ${state.levelName}, Nr, rubrikfältet (indraget efter nivå)` +
       `${$('#exFields').checked ? ', övriga fält' : ''}${$('#exTags').checked ? ', ' + state.tagName : ''}.\n` +
@@ -1397,8 +1422,15 @@ $('#bExport').onclick = () => {
 };
 for (const id of ['#exFormat', '#exLabel', '#exScope', '#exFields', '#exTags']) $(id).addEventListener('change', refreshExport);
 $('#exCopy').onclick = async () => { try { await navigator.clipboard.writeText($('#exOut').value); toast('Kopierat'); } catch { $('#exOut').select(); document.execCommand('copy'); toast('Kopierat'); } };
+function imgExportArgs() {
+  const scope = $('#exScope').value, rows = markRows(scope);
+  const names = images.map(i => i.name);
+  const opt = { label: state.fields.find(f => f.id === $('#exLabel').value), fields: $('#exFields').checked, tags: $('#exTags').checked };
+  return { scope, rows, names, opt };
+}
 $('#exDl').onclick = () => {
   const fmt = $('#exFormat').value, base = (fileName || 'lista').replace(/\.csv$/i, '');
+  if (fmt === 'imgzip') { const a = imgExportArgs(); return exportImagesZip(a.names, a.rows, a.opt); }
   download(`${base}${fmt === 'cols' ? '-nivakolumner' : fmt === 'csv' ? '-export' : ''}.${EXT[fmt]}`, buildExport(), MIME[fmt]);
 };
 $('#closeExport').onclick = () => $('#dlgExport').close();
@@ -1408,7 +1440,58 @@ $('#closeExport').onclick = () => $('#dlgExport').close();
 //   'imgs:<listans filnamn>'            → bildnamnen i visningsordning
 //   'img:<listans filnamn>\0<bildnamn>' → själva bilden
 // Saknas en bild under listans namn letas den upp via bildnamnet bland alla sparade bilder.
-let images = [];            // [{name, blob, url, storedKey}]
+let images = [];            // [{name, blob, url, storedKey}]  storedKey 'folder' = finns i bildmappen
+// Bildmapp: om en mapp är vald hämtas bilderna i första hand därifrån via bildnamnet i CSV-filen.
+let imgDir = null, imgDirPending = null;
+const dirKey = () => 'dir:' + (fileName || '');
+async function dirGetFile(dir, name) {
+  try {
+    const parts = name.split(/[\\/]/).filter(Boolean);
+    let d = dir;
+    for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p);
+    return await (await d.getFileHandle(parts[parts.length - 1])).getFile();
+  } catch { return null; }
+}
+async function dirWrite(name, blob) {      // skriver bara om filen inte redan finns
+  if (!imgDir || /[\\/]/.test(name)) return false;
+  try {
+    if (await imgDir.queryPermission({ mode: 'readwrite' }) !== 'granted' &&
+        await imgDir.requestPermission({ mode: 'readwrite' }) !== 'granted') return false;
+    if (await dirGetFile(imgDir, name)) return false;
+    const w = await (await imgDir.getFileHandle(name, { create: true })).createWritable();
+    await w.write(blob); await w.close();
+    return true;
+  } catch { return false; }
+}
+async function pickImgDir() {
+  if (!window.showDirectoryPicker) return toast('Webbläsaren kan inte välja mappar – använd Chrome eller Edge');
+  try {
+    const opts = { mode: 'readwrite', id: 'hierarkirator-bilder' };
+    if (fileHandle) opts.startIn = fileHandle;           // öppna i CSV-filens mapp
+    const d = await showDirectoryPicker(opts);
+    imgDir = d; imgDirPending = null;
+    await idbPut(dirKey(), d);
+    let copied = 0;                                       // bilder som bara finns i webbläsaren kopieras till mappen
+    for (const im of images) if (im.storedKey !== 'folder' && await dirWrite(im.name, im.blob)) copied++;
+    if (copied) toast(`${copied} bild${copied > 1 ? 'er' : ''} kopierades till mappen ${d.name}`);
+    await loadImages();
+  } catch (e) { if (e.name !== 'AbortError') toast('Kunde inte välja mappen: ' + e.message); }
+}
+async function connectPendingDir() {
+  const h = imgDirPending; if (!h) return;
+  try {
+    if (await h.requestPermission({ mode: 'readwrite' }) !== 'granted') return toast('Behörighet nekades');
+    imgDir = h; imgDirPending = null; await loadImages();
+  } catch (e) { toast('Kunde inte koppla mappen: ' + e.message); }
+}
+function updateDirBtn() {
+  const b = $('#bDir');
+  b.classList.toggle('primary', !!imgDirPending);
+  if (imgDir) { b.textContent = '📁 ' + imgDir.name; b.title = `Bilderna hämtas från mappen ”${imgDir.name}”. Klicka för att byta mapp.`; }
+  else if (imgDirPending) { b.textContent = '📁 Koppla bildmappen ' + imgDirPending.name; b.title = 'Klicka för att ge behörighet att läsa bildmappen igen'; }
+  else { b.textContent = '📁 Välj bildmapp…'; b.title = 'Välj mappen där bilderna ligger – bilderna hittas då via namnen i CSV-filen'; }
+}
+$('#bDir').onclick = () => imgDirPending ? connectPendingDir() : pickImgDir();
 let placing = false, pickFor = null, imgSig = '', imgLoadTok = 0;
 const imgKey = () => 'imgs:' + (fileName || '');
 const blobKey = name => 'img:' + (fileName || '') + '\u0000' + name;
@@ -1426,14 +1509,22 @@ async function storeImages() {
   try {
     for (const im of images) {
       const k = blobKey(im.name);
-      if (im.storedKey !== k) { await idbPut(k, im.blob); im.storedKey = k; }
+      if (im.storedKey !== k && im.storedKey !== 'folder') { await idbPut(k, im.blob); im.storedKey = k; }
     }
     await idbPut(imgKey(), images.map(i => i.name));
   } catch (e) { toast('Kunde inte spara bilderna i webbläsaren: ' + (e && e.message || e)); }
 }
 async function loadImages(none) {
   const tok = ++imgLoadTok, list = [];
-  if (!none) {
+  if (none) { imgDir = imgDirPending = null; }
+  else {
+    if (!imgDir) {          // kom ihåg bildmappen per lista
+      const h = await idbGet(dirKey());
+      if (h) {
+        try { if (await h.queryPermission({ mode: 'read' }) === 'granted') { imgDir = h; imgDirPending = null; } else imgDirPending = h; }
+        catch { imgDirPending = null; }
+      }
+    }
     const v = await idbGet(imgKey()), names = [], legacy = new Map();
     if (Array.isArray(v)) for (const it of v) {
       if (typeof it === 'string') names.push(it);
@@ -1442,8 +1533,10 @@ async function loadImages(none) {
     for (const r of state.rows) for (const m of r.marks) if (!names.includes(m.img)) names.push(m.img);
     let keys = null;
     for (const n of names) {
-      let blob = legacy.get(n), storedKey = null;
-      if (!blob) { blob = await idbGet(blobKey(n)); if (blob) storedKey = blobKey(n); }
+      let blob = null, storedKey = null;
+      if (imgDir) { blob = await dirGetFile(imgDir, n); if (blob) storedKey = 'folder'; }       // 1. bildmappen
+      if (!blob) blob = legacy.get(n);
+      if (!blob) { blob = await idbGet(blobKey(n)); if (blob) storedKey = blobKey(n); }       // 2. webbläsarens kopia
       if (!blob) {
         keys = keys || await idbKeys();
         const k = keys.find(k => typeof k === 'string' && k.startsWith('img:') && k.endsWith('\u0000' + n));
@@ -1456,6 +1549,8 @@ async function loadImages(none) {
   for (const i of images) URL.revokeObjectURL(i.url);
   images = list;
   if (images.some(i => !i.storedKey)) storeImages();       // kopiera in under listans namn
+  else if (images.length) idbPut(imgKey(), images.map(i => i.name)).catch(() => {});
+  updateDirBtn();
   render();
 }
 async function addImageFiles(files, asName) {
@@ -1463,10 +1558,16 @@ async function addImageFiles(files, asName) {
   for (const f of files) {
     if (!f.type.startsWith('image/')) continue;
     const name = asName || f.name, ex = images.find(i => i.name === name);
+    const inDir = imgDir && (await dirWrite(name, f) || !!await dirGetFile(imgDir, name));
     if (ex) {
       if (!asName && !confirm(`Det finns redan en bild som heter ”${name}”. Ersätt den?`)) continue;
       URL.revokeObjectURL(ex.url); ex.blob = f; ex.url = URL.createObjectURL(f); ex.storedKey = null;
     } else images.push({ name, blob: f, url: URL.createObjectURL(f), storedKey: null });
+    if (inDir) {
+      const df = await dirGetFile(imgDir, name), im = images.find(i => i.name === name);
+      if (df && df.size === f.size) im.storedKey = 'folder';      // finns i mappen – ingen extra kopia i webbläsaren
+      else if (df) toast(`Det finns redan en annan fil ”${name}” i bildmappen – den i mappen används när listan öppnas igen`);
+    }
     added++;
     if (asName) break;
   }
@@ -1477,33 +1578,155 @@ function imageNames() {     // bilder + namn som markeringar pekar på men som s
   for (const r of state.rows) for (const m of r.marks) if (!set.has(m.img)) { set.add(m.img); names.push(m.img); }
   return names;
 }
-const imgScale = n => (prefs.imgScale && prefs.imgScale[n]) || 100;
-function setImgBase() {
-  $('#imgs').style.setProperty('--base', Math.max(200, $('#imgScroll').clientWidth - 48) + 'px');
-  $('#imgs').style.setProperty('--z', prefs.imgZoom || 1);
-  $('#bZoom').textContent = Math.round((prefs.imgZoom || 1) * 100) + ' %';
-}
 function renderImages() {
   const names = imageNames(), box = $('#imgs');
   const sig = names.join('\n') + '|' + images.map(i => i.url).join();
   if (sig !== imgSig) {
     imgSig = sig;
     box.innerHTML = names.map(n => {
-      const k = images.findIndex(i => i.name === n), im = images[k], s = imgScale(n);
+      const k = images.findIndex(i => i.name === n), im = images[k];
       const btns = im
-        ? `<input type="range" class="isc" min="10" max="300" step="5" value="${s}" title="Bildens storlek"><span class="lbl iscv">${s} %</span>` +
-          `<button data-im="up"${k === 0 ? ' disabled' : ''} title="Flytta upp">↑</button><button data-im="down"${k === images.length - 1 ? ' disabled' : ''} title="Flytta ner">↓</button><button data-im="del" title="Ta bort bilden">✕</button>`
-        : `<button data-im="pick">Välj bildfil…</button><button data-im="del" title="Ta bort markeringarna">✕</button>`;
-      return `<div class="imgcard" data-img="${esc(n)}"><div class="imghead"><b>${esc(n)}</b><span class="lbl cnt-m"></span><span style="flex:1"></span>${btns}</div>` +
-        (im ? `<div class="imgbox" style="--s:${s}"><img src="${im.url}" draggable="false" alt=""><div class="mlayer"></div></div>`
-            : `<div class="missing">Bilden ”${esc(n)}” finns inte sparad i den här webbläsaren. Klicka ”Välj bildfil…” för att visa dess markeringar.</div>`) + `</div>`;
+        ? `<button data-im="up"${k === 0 ? ' disabled' : ''} title="Flytta tidigare">←</button><button data-im="down"${k === images.length - 1 ? ' disabled' : ''} title="Flytta senare">→</button>` +
+          `<button data-im="exp" title="Ladda ner bilden med markeringar">⤓</button><button data-im="del" title="Ta bort bilden">✕</button>`
+        : `<button data-im="dir" title="Välj mappen där bilden ligger">📁</button><button data-im="pick">Välj fil…</button><button data-im="del" title="Ta bort markeringarna">✕</button>`;
+      return `<div class="imgcard" data-img="${esc(n)}">` +
+        (im ? `<div class="imgtop"><input type="range" class="isc" min="0" max="1000" value="${relToSlider(imgRel(n))}" title="Bildens storlek i förhållande till de andra (dubbelklick = 100 %)"><span class="iscv">${fmtPct(imgRel(n))}</span></div>` : '') +
+        `<div class="imghead"><b title="${esc(n)}">${esc(n)}</b>${btns}</div>` +
+        (im ? `<div class="imgbox"><img src="${im.url}" draggable="false" alt=""><div class="mlayer"></div></div>`
+            : `<div class="missing">Bilden ”${esc(n)}” hittades inte${imgDir ? ` i mappen ”${esc(imgDir.name)}”` : ''}. ` +
+              `Klicka 📁 för att välja mappen där bilden ligger, eller ”Välj fil…”.</div>`) + `</div>`;
     }).join('') || '<div class="lbl">Inga bilder ännu. Klicka ”Lägg till bild…” eller släpp bildfiler här.</div>';
+    for (const img of box.querySelectorAll('img')) img.addEventListener('load', () => {
+      const im = images.find(i => i.name === img.closest('.imgcard').dataset.img);
+      if (im) { im.nw = img.naturalWidth; im.nh = img.naturalHeight; }
+      if (prefs.imgZoomN == null && images.every(i => i.nw)) fitZoom();    // första gången: anpassa till bredden
+      else scheduleLayout();
+    });
   }
   const has = names.length > 0;
   $('#split').hidden = !has;
   $('#imgPane').style.height = has ? (prefs.imgPaneH || Math.round(innerHeight * 0.45)) + 'px' : 'auto';
-  setImgBase();
+  syncZoomUI();
   renderMarkers();
+  scheduleLayout();
+}
+/* ---- layout: bilderna packas sida vid sida; senare bilder hoppar upp i luckor (skyline-packning) ---- */
+const ZMIN = 0.02, ZMAX = 4, IGAP = 12;
+const zoomLevel = () => prefs.imgZoomN || 0.25;
+// relativ storlek per bild (5 %–2000 %), multipliceras med den gemensamma zoomen
+const RMIN = 0.05, RMAX = 20;
+const imgRel = n => (prefs.imgRel && prefs.imgRel[n]) || 1;
+const relToSlider = r => Math.round(1000 * Math.log(r / RMIN) / Math.log(RMAX / RMIN));
+const sliderToRel = v => RMIN * Math.pow(RMAX / RMIN, v / 1000);
+const fmtPct = z => (z < 0.1 ? (z * 100).toFixed(1).replace('.', ',') : Math.round(z * 100)) + ' %';
+function skyPlace(sky, w, W) {
+  let best = null;
+  for (let i = 0; i < sky.length; i++) {
+    const x = sky[i].x;
+    if (x > 0 && x + w > W) break;
+    let y = 0, rem = w;
+    for (let j = i; j < sky.length && rem > 0; j++) { y = Math.max(y, sky[j].y); rem -= sky[j].w; }
+    if (!best || y < best.y - 0.5) best = { x, y };
+  }
+  return best || { x: 0, y: Math.max(0, ...sky.map(s => s.y)) };
+}
+function skyAdd(sky, x, w, y) {
+  const end = x + w, out = [{ x, w, y }];
+  for (const s of sky) {
+    const se = s.x + s.w;
+    if (se <= x || s.x >= end) { out.push(s); continue; }
+    if (s.x < x) out.push({ x: s.x, w: x - s.x, y: s.y });
+    if (se > end) out.push({ x: end, w: se - end, y: s.y });
+  }
+  out.sort((a, b) => a.x - b.x);
+  sky.length = 0;
+  for (const s of out) { const l = sky[sky.length - 1]; if (l && l.y === s.y && l.x + l.w === s.x) l.w += s.w; else sky.push({ ...s }); }
+}
+function sizeCard(c, z = zoomLevel()) {     // sätter bildens och kortets storlek, returnerar kortets bredd
+  const img = c.querySelector('img'), b = c.querySelector('.imgbox');
+  let iw = 240;
+  if (img) {
+    const nw = img.naturalWidth || 400, nh = img.naturalHeight || 300, zz = z * imgRel(c.dataset.img);
+    iw = Math.max(4, Math.round(nw * zz));
+    b.style.width = iw + 'px'; b.style.height = Math.max(3, Math.round(nh * zz)) + 'px';
+  }
+  const cw = Math.max(iw, 150) + 14;
+  c.style.width = cw + 'px';
+  return cw;
+}
+function layoutImages() {
+  if ($('#imgs .imgcard.resizing')) return;        // ett storleksreglage dras – vänta tills det släpps
+  const box = $('#imgs'), W = Math.max(120, $('#imgScroll').clientWidth - 28), z = zoomLevel();
+  const sky = [{ x: 0, w: W + IGAP, y: 0 }];
+  let maxB = 0, maxR = 0;
+  for (const c of box.querySelectorAll('.imgcard')) {
+    if (c.hidden) continue;
+    const cw = sizeCard(c, z);
+    const ch = c.offsetHeight, p = skyPlace(sky, cw + IGAP, W + IGAP);
+    c.style.left = p.x + 'px'; c.style.top = p.y + 'px';
+    skyAdd(sky, p.x, cw + IGAP, p.y + ch + IGAP);
+    maxB = Math.max(maxB, p.y + ch); maxR = Math.max(maxR, p.x + cw);
+  }
+  box.style.height = maxB + 'px'; box.style.width = maxR + 'px';
+}
+let layoutRaf = 0;
+function scheduleLayout() { if (!layoutRaf) layoutRaf = requestAnimationFrame(() => { layoutRaf = 0; layoutImages(); }); }
+new ResizeObserver(scheduleLayout).observe($('#imgScroll'));
+function syncZoomUI() {
+  const z = zoomLevel();
+  $('#zoomR').value = Math.round(1000 * Math.log(z / ZMIN) / Math.log(ZMAX / ZMIN));
+  $('#bZoom').textContent = fmtPct(z);
+}
+// Ändra en bilds relativa storlek. Kortet ligger still (bara storleken ändras);
+// övriga bilder flyttas först när reglaget släpps / scrollandet slutar.
+function setRel(card, r) {
+  r = clamp(r, RMIN, RMAX);
+  prefs.imgRel = prefs.imgRel || {}; prefs.imgRel[card.dataset.img] = r;
+  card.querySelector('.iscv').textContent = fmtPct(r);
+  card.classList.add('resizing');
+  sizeCard(card);
+  const box = $('#imgs'), bottom = card.offsetTop + card.offsetHeight, right = card.offsetLeft + card.offsetWidth;
+  if (bottom > box.offsetHeight) box.style.height = bottom + 'px';
+  if (right > box.offsetWidth) box.style.width = right + 'px';
+  savePrefsSoon();
+}
+$('#imgs').addEventListener('input', e => {          // reglaget: relativ storlek för en enskild bild
+  if (!e.target.classList.contains('isc')) return;
+  setRel(e.target.closest('.imgcard'), sliderToRel(+e.target.value));
+});
+/* markera en bild (klick) – Ctrl + scrollhjul zoomar då bara den */
+function pickImg(name) {
+  ui.pickedImg = name;
+  for (const c of $('#imgs').querySelectorAll('.imgcard')) c.classList.toggle('picked', c.dataset.img === name);
+}
+const pickedCard = () => ui.pickedImg ? [...$('#imgs').querySelectorAll('.imgcard')].find(c => c.dataset.img === ui.pickedImg && !c.hidden) : null;
+$('#imgScroll').addEventListener('pointerdown', e => {
+  if (e.button !== 0 || e.target.closest('.mark, button, input')) return;
+  const card = e.target.closest('.imgcard');
+  if (!card) return pickImg(null);                     // klick på tom yta avmarkerar
+  if (placing && e.target.closest('.imgbox')) return;  // placeringsläge: klicket blir en markering
+  pickImg(ui.pickedImg === card.dataset.img ? null : card.dataset.img);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && ui.pickedImg && !document.querySelector('dialog[open]') && !ui.selected) pickImg(null);
+});
+let relEndT;
+$('#imgs').addEventListener('change', e => {
+  if (!e.target.classList.contains('isc')) return;
+  e.target.closest('.imgcard').classList.remove('resizing');
+  layoutImages();
+});
+$('#imgs').addEventListener('dblclick', e => {
+  if (!e.target.classList.contains('isc')) return;
+  e.target.value = relToSlider(1);
+  e.target.dispatchEvent(new Event('input', { bubbles: true }));
+  e.target.dispatchEvent(new Event('change', { bubbles: true }));
+});
+function setZoom(z) { prefs.imgZoomN = clamp(z, ZMIN, ZMAX); syncZoomUI(); layoutImages(); savePrefsSoon(); }
+function fitZoom() {
+  const ws = images.filter(i => i.nw).map(i => i.nw * imgRel(i.name));
+  if (!ws.length) return;
+  setZoom(($('#imgScroll').clientWidth - 28 - 14 - 4) / Math.max(...ws));
 }
 function renderMarkers() {
   const R = state.rows, per = new Map(), lf = state.fields[0];
@@ -1517,9 +1740,10 @@ function renderMarkers() {
     per.get(m.img).push(`<div class="${cls}" data-id="${r.id}" data-k="${k}" style="left:${m.x * 100}%;top:${m.y * 100}%" title="${esc(view.num[i] + ' ' + (r.values[lf.id] || ''))}">${view.markNo[i]}</div>`);
   }));
   for (const card of $('#imgs').querySelectorAll('.imgcard')) {
+    card.classList.toggle('picked', card.dataset.img === ui.pickedImg);
     const arr = per.get(card.dataset.img) || [], ml = card.querySelector('.mlayer');
     if (ml) ml.innerHTML = arr.join('');
-    card.querySelector('.cnt-m').textContent = arr.length ? `${arr.length} markering${arr.length > 1 ? 'ar' : ''}` : '';
+    card.querySelector('.imghead b').title = card.dataset.img + (arr.length ? ` – ${arr.length} markering${arr.length > 1 ? 'ar' : ''}` : '');
   }
   $('#imgInfo').textContent = total ? `${shown}${shown !== total ? ' av ' + total : ''} markeringar visas` : '';
   applyImgFilter();
@@ -1527,7 +1751,9 @@ function renderMarkers() {
 function applyImgFilter() {       // "Bara bilder med markerad rad"
   const on = !!prefs.imgOnlySel, r = on && ui.selected ? state.rows[idxOf(ui.selected)] : null;
   const set = new Set(r ? r.marks.map(m => m.img) : []);
-  for (const c of $('#imgs').querySelectorAll('.imgcard')) c.hidden = !!r && !set.has(c.dataset.img);
+  let changed = false;
+  for (const c of $('#imgs').querySelectorAll('.imgcard')) { const h = !!r && !set.has(c.dataset.img); if (c.hidden !== h) { c.hidden = h; changed = true; } }
+  if (changed) layoutImages();
   const note = $('#imgNote');
   note.hidden = !on || (r && set.size > 0);
   note.textContent = !r ? 'Markera en rad i listan för att se bilderna där den förekommer. (Alla bilder visas.)' : 'Den markerade raden har inga markeringar i bilderna.';
@@ -1553,7 +1779,10 @@ function selectFromMark(id, k) {
   if (!tbody.querySelector(`tr[data-id="${id}"]`)) { expandAncestors(i); backupLocal(); render(); }
   selectRow(id, { id, k });
   const tr = tbody.querySelector(`tr[data-id="${id}"]`);
-  if (tr) tr.scrollIntoView({ block: 'nearest' });
+  if (tr) {     // visa raden mitt i listan
+    const mr = main.getBoundingClientRect(), rr = tr.getBoundingClientRect(), th = thead.offsetHeight;
+    main.scrollTo({ top: main.scrollTop + rr.top - (mr.top + th) - (mr.height - th - rr.height) / 2, behavior: 'smooth' });
+  }
 }
 let qsT;
 function quickSave() { clearTimeout(qsT); qsT = setTimeout(() => save(false), 700); }   // markeringar sparas direkt
@@ -1586,33 +1815,33 @@ $('#bPlace').onclick = () => {
 $('#bOnlySel').onclick = () => { prefs.imgOnlySel = !prefs.imgOnlySel; savePrefs(); applyImgFilter(); updateMarkSel(true); };
 let prefsT;
 const savePrefsSoon = () => { clearTimeout(prefsT); prefsT = setTimeout(savePrefs, 400); };
-function setZoom(z) { prefs.imgZoom = clamp(z, 0.1, 10); setImgBase(); savePrefsSoon(); }
 $('#bZoom').onclick = () => setZoom(1);
+$('#bFit').onclick = fitZoom;
+$('#zoomR').addEventListener('input', e => setZoom(ZMIN * Math.pow(ZMAX / ZMIN, e.target.value / 1000)));
+$('#bExpImg').onclick = exportAllImages;
 $('#imgScroll').addEventListener('wheel', e => {     // Ctrl + scrollhjul = zooma hela bildytan
   if (!e.ctrlKey) return;
   e.preventDefault();
+  const pc = pickedCard();
+  if (pc) {      // markerad bild: zooma bara den
+    setRel(pc, imgRel(pc.dataset.img) * Math.exp(-clamp(e.deltaY, -300, 300) * 0.0015));
+    pc.querySelector('.isc').value = relToSlider(imgRel(pc.dataset.img));
+    clearTimeout(relEndT);
+    relEndT = setTimeout(() => { pc.classList.remove('resizing'); layoutImages(); }, 350);
+    return;
+  }
   const sc = $('#imgScroll'), r = sc.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
   const fx = (sc.scrollLeft + mx) / sc.scrollWidth, fy = (sc.scrollTop + my) / sc.scrollHeight;
-  setZoom((prefs.imgZoom || 1) * Math.exp(-clamp(e.deltaY, -300, 300) * 0.0015));
+  setZoom(zoomLevel() * Math.exp(-clamp(e.deltaY, -300, 300) * 0.0015));
   sc.scrollLeft = fx * sc.scrollWidth - mx; sc.scrollTop = fy * sc.scrollHeight - my;   // zooma kring muspekaren
 }, { passive: false });
-window.addEventListener('resize', setImgBase);
-$('#imgs').addEventListener('input', e => {          // skala en enskild bild
-  if (!e.target.classList.contains('isc')) return;
-  const card = e.target.closest('.imgcard'), v = +e.target.value;
-  card.querySelector('.imgbox').style.setProperty('--s', v);
-  card.querySelector('.iscv').textContent = v + ' %';
-  prefs.imgScale = prefs.imgScale || {}; prefs.imgScale[card.dataset.img] = v; savePrefsSoon();
-});
-$('#imgs').addEventListener('dblclick', e => {        // dubbelklick på skjutreglaget = 100 %
-  if (!e.target.classList.contains('isc')) return;
-  e.target.value = 100; e.target.dispatchEvent(new Event('input', { bubbles: true }));
-});
 $('#imgs').addEventListener('click', e => {
   const b = e.target.closest('[data-im]'); if (!b) return;
   const name = b.closest('.imgcard').dataset.img, k = images.findIndex(i => i.name === name);
   const m = b.dataset.im;
   if (m === 'pick') { pickFor = name; $('#imgInput').click(); }
+  else if (m === 'exp') exportOneImage(name);
+  else if (m === 'dir') imgDirPending ? connectPendingDir() : pickImgDir();
   else if (m === 'up' || m === 'down') {
     const j = m === 'up' ? k - 1 : k + 1;
     [images[k], images[j]] = [images[j], images[k]];
@@ -1697,9 +1926,90 @@ $('#split').addEventListener('pointerdown', e => {
   const sy = e.clientY, h0 = $('#imgPane').getBoundingClientRect().height, max = $('#panes').getBoundingClientRect().height - 120;
   const sp = $('#split'); sp.setPointerCapture(e.pointerId);
   const mv = ev => { prefs.imgPaneH = Math.round(clamp(h0 - (ev.clientY - sy), 80, max)); $('#imgPane').style.height = prefs.imgPaneH + 'px'; };
-  const up = () => { sp.removeEventListener('pointermove', mv); sp.removeEventListener('pointerup', up); setImgBase(); savePrefs(); };
+  const up = () => { sp.removeEventListener('pointermove', mv); sp.removeEventListener('pointerup', up); savePrefs(); };
   sp.addEventListener('pointermove', mv); sp.addEventListener('pointerup', up);
 });
+
+/* ---- export av bilder med siffermarkeringar ---- */
+// Vilka raders markeringar som tas med: 'all' = alla, 'filtered'/null = rader som matchar filtret
+// (som i bildytan), 'visible' = dessutom bara rader som syns i listan (ej hopfällda).
+function markRows(scope) {
+  if (scope === 'all') return new Set(state.rows.map(r => r.id));
+  const v = computeView(scope !== 'visible'), ok = new Set();
+  for (const i of v.visible) if (!v.direct || v.direct[i]) ok.add(state.rows[i].id);
+  return ok;
+}
+function visibleMarks(name, rows = markRows()) {
+  const out = [];
+  state.rows.forEach((r, i) => {
+    if (!rows.has(r.id)) return;
+    for (const m of r.marks) if (m.img === name) out.push({ x: m.x, y: m.y, no: view.markNo[i], i });
+  });
+  return out;
+}
+async function renderMarkedImage(name, rows) {
+  const im = images.find(i => i.name === name); if (!im) return null;
+  const bmp = await createImageBitmap(im.blob);
+  const cv = document.createElement('canvas'); cv.width = bmp.width; cv.height = bmp.height;
+  const g = cv.getContext('2d'); g.drawImage(bmp, 0, 0);
+  const r = clamp(Math.min(cv.width, cv.height) * 0.018, 9, 90);       // cirkelns radie, relativt bildens storlek
+  g.font = `bold ${Math.round(r * 1.05)}px "Segoe UI", Arial, sans-serif`;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const m of visibleMarks(name, rows)) {
+    const cx = m.x * cv.width, cy = m.y * cv.height, t = String(m.no);
+    const w = Math.max(2 * r, g.measureText(t).width + r * 0.9);
+    g.beginPath();
+    g.moveTo(cx - w / 2 + r, cy - r);
+    g.arc(cx + w / 2 - r, cy, r, -Math.PI / 2, Math.PI / 2);
+    g.arc(cx - w / 2 + r, cy, r, Math.PI / 2, Math.PI * 1.5);
+    g.closePath();
+    g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = r * 0.3; g.shadowOffsetY = r * 0.08;
+    g.fillStyle = '#fff'; g.fill();
+    g.shadowColor = 'transparent';
+    g.lineWidth = Math.max(1.5, r * 0.18); g.strokeStyle = '#000'; g.stroke();
+    g.fillStyle = '#000'; g.fillText(t, cx, cy + r * 0.06);
+  }
+  const type = im.blob.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+  const blob = await new Promise(res => cv.toBlob(res, type, 0.92));
+  return { blob, file: name.replace(/\.[^.]+$/, '') + '-markerad.' + (type === 'image/jpeg' ? 'jpg' : 'png') };
+}
+function legendCSV(names, rows = markRows(), opt = {}) {
+  const lf = opt.label || state.fields[0], others = opt.fields ? state.fields.filter(f => f.id !== lf.id) : [];
+  const lines = [['Nr', 'Nr i listan', lf.name, ...others.map(f => f.name), ...(opt.tags ? [state.tagName] : []), 'Bilder']];
+  state.rows.forEach((r, i) => {
+    if (!view.markNo[i] || !rows.has(r.id)) return;
+    const imgs = [...new Set(r.marks.map(m => m.img).filter(n => names.includes(n)))];
+    if (imgs.length) lines.push([view.markNo[i], view.num[i], r.values[lf.id] || '', ...others.map(f => r.values[f.id] || ''),
+      ...(opt.tags ? [r.tags.join(', ')] : []), imgs.join(', ')]);
+  });
+  return '﻿' + lines.map(l => l.map(csvCell).join(';')).join('\r\n') + '\r\n';
+}
+function downloadBlob(name, blob) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function exportOneImage(name) {
+  try { const res = await renderMarkedImage(name); if (res) downloadBlob(res.file, res.blob); }
+  catch (e) { toast('Kunde inte exportera bilden: ' + e.message); }
+}
+function exportAllImages() {     // knappen i bildytan: de bilder och markeringar som visas
+  const names = [...$('#imgs').querySelectorAll('.imgcard')].filter(c => !c.hidden).map(c => c.dataset.img).filter(n => images.some(i => i.name === n));
+  return exportImagesZip(names, markRows());
+}
+async function exportImagesZip(names, rows, opt) {
+  if (!names.length) return toast('Det finns inga bilder att exportera');
+  toast('Exporterar bilder…');
+  try {
+    const files = [];
+    for (const n of names) {
+      const res = await renderMarkedImage(n, rows);
+      files.push({ name: res.file, data: new Uint8Array(await res.blob.arrayBuffer()) });
+    }
+    files.push({ name: 'teckenforklaring.csv', data: legendCSV(names, rows, opt) });
+    const base = (fileName || 'lista').replace(/\.csv$/i, '');
+    downloadBlob(base + '-bilder.zip', new Blob([zipStore(files)], { type: 'application/zip' }));
+  } catch (e) { toast('Kunde inte exportera bilderna: ' + e.message); }
+}
 
 /* ---------------- misc ---------------- */
 let toastT;

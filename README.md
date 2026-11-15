@@ -24,4 +24,5 @@ Se `exempel.csv`.
 Under listan kan du lägga till bilder och märka ut rader på dem med numrerade cirklar. Dra en rad till en bild, eller använd **📍 Placera markering**.
 
 - Markeringarna sparas i CSV-kolumnen `Bildmarkeringar`, i formatet `bild.png@x,y | bild2.jpg@x,y`. x och y anges i procent av bildens bredd och höjd.
-- Själva bildfilerna sparas i webbläsaren, kopplade till CSV-filens namn. Öppnar du listan i en annan webbläsare eller på en annan dator visas en platshållare med knappen **Välj bildfil…**.
+- **Bildmapp (rekommenderas):** klicka **📁 Välj bildmapp…** och peka ut mappen där bilderna ligger, gärna samma mapp som CSV-filen. Bilderna hittas då via namnen i CSV-filen, så listan kan flyttas eller delas tillsammans med mappen. Bilder du lägger till kopieras in i mappen, men befintliga filer skrivs aldrig över. Mappvalet kommer ihåg per lista.
+- Utan bildmapp sparas bilderna i webbläsaren, kopplade till CSV-filens namn. Det gäller också som reserv om mappen inte är kopplad.
