@@ -154,6 +154,8 @@ dialog h2{margin:0 0 6px;font-size:17px}
 .imgtop .isc{width:110px;flex:none;margin:0}
 .imgtop .iscv{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 .imgcard.resizing{z-index:5;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.imghead button.lockb{opacity:.45}
+.imgcard.locked .imghead button.lockb{opacity:1;background:var(--accent);color:#fff;border-color:var(--accent)}
 .imgcard.picked{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 .imgcard.picked.resizing{box-shadow:0 0 0 2px var(--accent),0 6px 24px rgba(0,0,0,.25)}
 #zoomR{width:170px}
@@ -1028,7 +1030,7 @@ function loadState(s, name, noImages) {
   ui.tags.clear(); ui.search = ''; ui.selected = null; ui.selMark = null; $('#search').value = '';
   backupLocal(); render();
   imgDir = imgDirPending = null;          // bildmappen hör till listan – läses in på nytt
-  loadImages(noImages);
+  return loadImages(noImages);
 }
 async function openFile() {
   if (!fileHandle && dirty() && state.rows.length &&
@@ -1492,6 +1494,30 @@ function updateDirBtn() {
   else { b.textContent = '📁 Välj bildmapp…'; b.title = 'Välj mappen där bilderna ligger – bilderna hittas då via namnen i CSV-filen'; }
 }
 $('#bDir').onclick = () => imgDirPending ? connectPendingDir() : pickImgDir();
+// Efter omladdning har Chrome oftast glömt behörigheten till bildmappen. Då visas webbläsarens
+// kopior tills behörigheten ges – vi frågar automatiskt vid första klicket på sidan,
+// så att bilderna läses in på nytt från mappen (nya versioner av filerna syns).
+let dirAsked = false;
+async function askDirPermission() {
+  const h = imgDirPending; if (!h || dirAsked) return;
+  dirAsked = true;
+  try {
+    const p = await h.requestPermission({ mode: 'readwrite' });
+    if (p === 'granted') { if (imgDirPending === h) { imgDir = h; imgDirPending = null; } await loadImages(); }
+  } catch { dirAsked = false; }       // inget användarklick att fråga i – försök vid nästa klick
+}
+document.addEventListener('click', e => {
+  if (imgDirPending && !e.target.closest('#bDir, #bReconnect, #bOpen, #bSave, #bSaveAs, #bPerm, #bAddImg, [data-im], input[type=file]')) askDirPermission();
+}, true);
+// Läs om bilder som ändrats i mappen när fönstret får fokus igen (t.ex. efter redigering i ett bildprogram)
+async function refreshDirImages() {
+  if (!imgDir) return;
+  for (const im of images) {
+    const f = await dirGetFile(imgDir, im.name);
+    if (f && (im.storedKey !== 'folder' || f.lastModified !== im.blob.lastModified || f.size !== im.blob.size)) return loadImages();
+  }
+}
+window.addEventListener('focus', refreshDirImages);
 let placing = false, pickFor = null, imgSig = '', imgLoadTok = 0;
 const imgKey = () => 'imgs:' + (fileName || '');
 const blobKey = name => 'img:' + (fileName || '') + '\u0000' + name;
@@ -1552,6 +1578,7 @@ async function loadImages(none) {
   else if (images.length) idbPut(imgKey(), images.map(i => i.name)).catch(() => {});
   updateDirBtn();
   render();
+  if (imgDirPending && images.length) toast(`Bilderna visas från webbläsarens kopia. Klicka någonstans på sidan och tillåt åtkomst till mappen ”${imgDirPending.name}” för att läsa in dem från mappen (välj gärna ”Tillåt vid varje besök”).`);
 }
 async function addImageFiles(files, asName) {
   let added = 0;
@@ -1589,9 +1616,10 @@ function renderImages() {
         ? `<button data-im="up"${k === 0 ? ' disabled' : ''} title="Flytta tidigare">←</button><button data-im="down"${k === images.length - 1 ? ' disabled' : ''} title="Flytta senare">→</button>` +
           `<button data-im="exp" title="Ladda ner bilden med markeringar">⤓</button><button data-im="del" title="Ta bort bilden">✕</button>`
         : `<button data-im="dir" title="Välj mappen där bilden ligger">📁</button><button data-im="pick">Välj fil…</button><button data-im="del" title="Ta bort markeringarna">✕</button>`;
-      return `<div class="imgcard" data-img="${esc(n)}">` +
+      const lk = `<button data-im="lock" class="lockb" title="Lås bilden: visas alltid, även när ”Bara bilder med markerad rad” är på">${isLocked(n) ? '🔒' : '🔓'}</button>`;
+      return `<div class="imgcard${isLocked(n) ? ' locked' : ''}" data-img="${esc(n)}">` +
         (im ? `<div class="imgtop"><input type="range" class="isc" min="0" max="1000" value="${relToSlider(imgRel(n))}" title="Bildens storlek i förhållande till de andra (dubbelklick = 100 %)"><span class="iscv">${fmtPct(imgRel(n))}</span></div>` : '') +
-        `<div class="imghead"><b title="${esc(n)}">${esc(n)}</b>${btns}</div>` +
+        `<div class="imghead"><b title="${esc(n)}">${esc(n)}</b>${lk}${btns}</div>` +
         (im ? `<div class="imgbox"><img src="${im.url}" draggable="false" alt=""><div class="mlayer"></div></div>`
             : `<div class="missing">Bilden ”${esc(n)}” hittades inte${imgDir ? ` i mappen ”${esc(imgDir.name)}”` : ''}. ` +
               `Klicka 📁 för att välja mappen där bilden ligger, eller ”Välj fil…”.</div>`) + `</div>`;
@@ -1616,6 +1644,7 @@ const zoomLevel = () => prefs.imgZoomN || 0.25;
 // relativ storlek per bild (5 %–2000 %), multipliceras med den gemensamma zoomen
 const RMIN = 0.05, RMAX = 20;
 const imgRel = n => (prefs.imgRel && prefs.imgRel[n]) || 1;
+const isLocked = n => !!(prefs.imgLock && prefs.imgLock[n]);    // låst bild visas alltid
 const relToSlider = r => Math.round(1000 * Math.log(r / RMIN) / Math.log(RMAX / RMIN));
 const sliderToRel = v => RMIN * Math.pow(RMAX / RMIN, v / 1000);
 const fmtPct = z => (z < 0.1 ? (z * 100).toFixed(1).replace('.', ',') : Math.round(z * 100)) + ' %';
@@ -1752,7 +1781,7 @@ function applyImgFilter() {       // "Bara bilder med markerad rad"
   const on = !!prefs.imgOnlySel, r = on && ui.selected ? state.rows[idxOf(ui.selected)] : null;
   const set = new Set(r ? r.marks.map(m => m.img) : []);
   let changed = false;
-  for (const c of $('#imgs').querySelectorAll('.imgcard')) { const h = !!r && !set.has(c.dataset.img); if (c.hidden !== h) { c.hidden = h; changed = true; } }
+  for (const c of $('#imgs').querySelectorAll('.imgcard')) { const h = !!r && !set.has(c.dataset.img) && !isLocked(c.dataset.img); if (c.hidden !== h) { c.hidden = h; changed = true; } }
   if (changed) layoutImages();
   const note = $('#imgNote');
   note.hidden = !on || (r && set.size > 0);
@@ -1839,6 +1868,15 @@ $('#imgs').addEventListener('click', e => {
   const b = e.target.closest('[data-im]'); if (!b) return;
   const name = b.closest('.imgcard').dataset.img, k = images.findIndex(i => i.name === name);
   const m = b.dataset.im;
+  if (m === 'lock') {
+    prefs.imgLock = prefs.imgLock || {};
+    if (isLocked(name)) delete prefs.imgLock[name]; else prefs.imgLock[name] = true;
+    savePrefs();
+    const card = b.closest('.imgcard'), on = isLocked(name);
+    card.classList.toggle('locked', on); b.textContent = on ? '🔒' : '🔓';
+    applyImgFilter();
+    return;
+  }
   if (m === 'pick') { pickFor = name; $('#imgInput').click(); }
   else if (m === 'exp') exportOneImage(name);
   else if (m === 'dir') imgDirPending ? connectPendingDir() : pickImgDir();
@@ -2047,8 +2085,9 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
         if (!confirm(`Listan i webbläsaren (${fileName || 'namnlös'}) har ändringar som inte sparats till någon fil.\nÖppna ${h.name} ändå? Ändringarna går då förlorade.`)) return false;
       }
       if (same && dirty()) { fileHandle = h; await save(true); }
-      else { fileHandle = h; loadState(stateFromCSV(await decodeFile(await h.getFile())), h.name); }
+      else { fileHandle = h; await loadState(stateFromCSV(await decodeFile(await h.getFile())), h.name); }
       pendingHandle = null; btn.hidden = true; updateStatus();
+      if (ask && imgDirPending) askDirPermission();    // samma klick: be om bildmappen också
       return true;
     } catch (e) { toast('Kunde inte öppna filen: ' + e.message); return false; }
   };
