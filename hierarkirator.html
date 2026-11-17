@@ -36,7 +36,7 @@ input,select,textarea{font:inherit;color:var(--text);background:var(--panel);bor
 .status b{color:var(--text);font-weight:600}
 .newchip{border:1px dashed var(--accent);color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:3px 10px;cursor:grab;user-select:none}
 .newchip:active{cursor:grabbing}
-#search{width:180px}
+#search{width:130px}
 .chip{display:inline-flex;align-items:center;gap:3px;border-radius:10px;padding:0 8px;font-size:12px;line-height:20px;cursor:pointer;user-select:none;
   background:hsl(var(--h) 70% 91%);color:hsl(var(--h) 45% 28%);border:1px solid transparent;white-space:nowrap}
 @media (prefers-color-scheme: dark){.chip{background:hsl(var(--h) 30% 24%);color:hsl(var(--h) 70% 84%)}}
@@ -132,13 +132,17 @@ dialog h2{margin:0 0 6px;font-size:17px}
 #toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--panel);padding:8px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
 #toast.show{opacity:.95}
 [hidden]{display:none!important}
-#panes{flex:1;min-height:0;display:flex;flex-direction:column}
-#panes main{flex:1 1 0;min-height:80px}
-#split{flex:none;height:7px;cursor:row-resize;background:var(--border);border-top:1px solid var(--panel)}
+#panes{flex:1;min-height:0;display:flex;flex-direction:row}
+#left{flex:1 1 0;min-width:160px;display:flex;flex-direction:column}
+#left main{flex:1 1 0;min-height:0}
+.panebar{flex:none;padding:6px 14px;background:var(--panel);border-bottom:1px solid var(--border);z-index:4}
+button.ic{padding:3px 7px;min-width:30px}
+#bDir{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#split{flex:none;width:7px;cursor:col-resize;background:var(--border);border-left:1px solid var(--panel)}
 #split:hover{background:var(--accent)}
-#imgPane{flex:none;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);border-top:1px solid var(--border)}
+#imgPane{flex:none;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);border-left:1px solid var(--border)}
 .imgbar{flex:none;z-index:7;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 14px;background:var(--panel);border-bottom:1px solid var(--border)}
-#imgScroll{flex:1 1 auto;min-height:0;overflow:auto}
+#imgScroll{flex:1 1 auto;min-height:0;overflow:auto;overflow-y:scroll}
 #imgNote{padding:12px 14px 0}
 #imgs{position:relative;margin:12px 14px;min-height:20px}
 #imgs.placing .imgbox{cursor:crosshair}
@@ -150,15 +154,12 @@ dialog h2{margin:0 0 6px;font-size:17px}
 .imgbox{position:relative;user-select:none;margin:0 auto}
 .imgbox img{display:block;width:100%;height:100%;-webkit-user-drag:none}
 .imgcard .missing{width:240px;padding:16px}
-.imgtop{display:flex;align-items:center;gap:6px;height:20px;margin-bottom:2px}
-.imgtop .isc{width:110px;flex:none;margin:0}
-.imgtop .iscv{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
-.imgcard.resizing{z-index:5;box-shadow:0 6px 24px rgba(0,0,0,.25)}
 .imghead button.lockb{opacity:.45}
+.itags{display:flex;flex-wrap:wrap;gap:3px;align-items:center;margin:-2px 0 5px;min-height:20px}
+.itags input.itagin{border:none;background:transparent;padding:1px 2px;width:60px;flex:1;min-width:50px;font-size:12px}
+.itags input.itagin:focus{outline:none}
+#imgTagFilter{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .imgcard.locked .imghead button.lockb{opacity:1;background:var(--accent);color:#fff;border-color:var(--accent)}
-.imgcard.picked{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
-.imgcard.picked.resizing{box-shadow:0 0 0 2px var(--accent),0 6px 24px rgba(0,0,0,.25)}
-#zoomR{width:170px}
 .imgbox.dropok{outline:3px dashed var(--accent);outline-offset:2px}
 .mlayer{position:absolute;inset:0}
 .missing{padding:24px;color:var(--muted);border:1px dashed var(--border);border-radius:6px}
@@ -176,40 +177,39 @@ dialog h2{margin:0 0 6px;font-size:17px}
 <body>
 <header>
   <div class="bar">
-    <h1>Hierarkirator</h1>
-    <button id="bNew" title="Ny lista">Ny</button>
-    <button id="bOpen" title="Öppna semikolonseparerad CSV">Öppna…</button>
-    <button id="bSave" title="Spara nu (Ctrl+S)">Spara</button>
-    <button id="bSaveAs">Spara som…</button>
+    <button id="bNew" class="ic" title="Ny lista">🗋</button>
+    <button id="bOpen" class="ic" title="Öppna semikolonseparerad CSV…">📂</button>
+    <button id="bSave" class="ic" title="Spara nu (Ctrl+S)">💾</button>
+    <button id="bSaveAs" class="ic" title="Spara som…">💾…</button>
     <button id="bReconnect" class="primary" hidden></button>
     <span class="sep"></span>
-    <button id="bUndo" title="Ångra (Ctrl+Z)">↶ Ångra</button>
-    <button id="bRedo" title="Gör om (Ctrl+Y)">↷ Gör om</button>
+    <button id="bUndo" class="ic" title="Ångra (Ctrl+Z)">↶</button>
+    <button id="bRedo" class="ic" title="Gör om (Ctrl+Y)">↷</button>
     <span class="sep"></span>
-    <button id="bFields">Fält…</button>
-    <button id="bExport">Exportera…</button>
-    <button id="bKeys" title="Visa kortkommandon (?)">⌨ Kortkommandon</button>
+    <button id="bFields" class="ic" title="Fält…">☰</button>
+    <button id="bExport" class="ic" title="Exportera listan…">⤓</button>
+    <button id="bKeys" class="ic" title="Visa kortkommandon (?)">⌨</button>
     <div class="status" id="status"><span class="dot"></span><span id="statusText"></span><button id="bPerm" hidden>Ge skrivbehörighet</button></div>
-  </div>
-  <div class="bar">
-    <span class="newchip" id="newChip" draggable="true" title="Dra in i listan för att placera en ny rad – eller klicka för att lägga till under markerad rad">＋ Ny rad</span>
-    <span class="sep"></span>
-    <span class="lbl">Visa nivå:</span><span id="levels" class="bar"></span>
-    <span class="sep"></span>
-    <input id="search" type="search" placeholder="Sök…">
-    <span class="sep"></span>
-    <span class="lbl">Visa:</span>
-    <span class="bar" id="selbar" style="gap:0">
-      <button id="bShowAll" class="seg-l">Alla</button><button id="bShowSel" class="seg-r" title="Visa bara rader med ikryssad ruta (och raderna ovanför dem)">Bara valda <i id="selCount"></i></button>
-    </span>
-    <button id="bClearSel" title="Avmarkera alla valda rader">Avmarkera</button>
-    <span class="sep"></span>
-    <span class="lbl">Taggar:</span><span id="tagfilter"></span>
-    <span class="sep"></span>
-    <label class="lbl"><input type="checkbox" id="cbNum"> Numrering</label>
   </div>
 </header>
 <div id="panes">
+<div id="left">
+  <div class="bar panebar">
+    <span class="newchip" id="newChip" draggable="true" title="Ny rad: dra in i listan för att placera den – eller klicka för att lägga till under markerad rad">＋ Rad</span>
+    <span class="sep"></span>
+    <span class="lbl" title="Visa nivåer">Nivå</span><span id="levels" class="bar" style="gap:2px"></span>
+    <span class="sep"></span>
+    <input id="search" type="search" placeholder="🔍 Sök…">
+    <span class="sep"></span>
+    <span class="bar" id="selbar" style="gap:0">
+      <button id="bShowAll" class="seg-l" title="Visa alla rader">Alla</button><button id="bShowSel" class="seg-r" title="Visa bara rader med ikryssad ruta (och raderna ovanför dem)">☑ <i id="selCount"></i></button>
+    </span>
+    <button id="bClearSel" class="ic" title="Avmarkera alla valda rader">☐</button>
+    <span class="sep"></span>
+    <label class="lbl" title="Visa numrering (1.2.3)"><input type="checkbox" id="cbNum"> 1.2</label>
+    <span class="sep"></span>
+    <span class="lbl" title="Filtrera på taggar">🏷</span><span id="tagfilter"></span>
+  </div>
 <main id="main">
   <div id="wrap">
     <table id="grid"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="tbody"></tbody></table>
@@ -217,19 +217,21 @@ dialog h2{margin:0 0 6px;font-size:17px}
     <div id="dropline"><span></span></div>
   </div>
 </main>
+</div>
 <div id="split" title="Dra för att ändra storlek" hidden></div>
 <section id="imgPane">
   <div class="imgbar">
-    <b>Bilder</b>
-    <button id="bDir" title="Välj mappen där bilderna ligger – bilderna hittas då via namnen i CSV-filen">📁 Välj bildmapp…</button>
-    <button id="bAddImg">＋ Lägg till bild…</button>
-    <button id="bPlace" title="Klicka i en bild för att placera en markering för den markerade raden">📍 Placera markering</button>
-    <button id="bOnlySel" title="Visa bara de bilder där den markerade raden har markeringar">Bara bilder med markerad rad</button>
-    <span class="lbl">Zoom:</span><input type="range" id="zoomR" min="0" max="1000" title="Zooma bildytan (även Ctrl + scrollhjul). Klicka på en bild för att zooma bara den med Ctrl + scrollhjul.">
-    <button id="bZoom" title="Klicka för 100 % (bildernas verkliga storlek)">100 %</button>
-    <button id="bFit" title="Anpassa zoomen så att bilderna ryms i bildytans bredd">Anpassa</button>
-    <button id="bExpImg" title="Ladda ner bilderna med siffermarkeringarna (ZIP) inklusive teckenförklaring">⤓ Exportera bilder</button>
+    <button id="bDir" class="ic" title="Välj mappen där bilderna ligger – bilderna hittas då via namnen i CSV-filen">📁</button>
+    <button id="bAddImg" class="ic" title="Lägg till bild…">＋</button>
+    <button id="bPlace" class="ic" title="Placera markering: klicka i en bild för att placera en markering för den markerade raden">📍</button>
+    <button id="bOnlySel" class="ic" title="Visa bara de bilder där den markerade raden har markeringar">🎯</button>
+    <span class="sep"></span>
+    <button id="bFit" class="ic" title="Anpassa: skala bilderna (upp eller ner) så att de fyller bildytans bredd">⤢</button>
+    <button id="bZoom" title="Zoom – Ctrl + scrollhjul zoomar alla bilder. Klicka för 100 % (bildernas verkliga storlek).">100 %</button>
+    <span class="sep"></span>
+    <button id="bExpImg" class="ic" title="Exportera bilder: ladda ner bilderna med siffermarkeringarna (ZIP) inklusive teckenförklaring">⤓</button>
     <span class="lbl" id="imgInfo"></span>
+    <span id="imgTagFilter"></span>
   </div>
   <div id="imgScroll">
     <div id="imgNote" class="lbl" hidden></div>
@@ -243,6 +245,7 @@ dialog h2{margin:0 0 6px;font-size:17px}
   <kbd>Enter</kbd> bekräftar ett fält · <kbd>Enter</kbd> på markerad rad ger ny rad · <kbd>Delete</kbd> tar bort · <kbd>?</kbd> alla kortkommandon · Autosparning var 10:e sekund.
 </footer>
 <datalist id="taglist"></datalist>
+<datalist id="imgtaglist"></datalist>
 <input type="file" id="fileInput" accept=".csv,text/csv" hidden>
 <div id="toast"></div>
 
@@ -286,24 +289,23 @@ dialog h2{margin:0 0 6px;font-size:17px}
     </table></section>
     <section><h3>Mus</h3><table>
       <tr><td>Dra <b>⋮⋮</b> eller punkten/indraget</td><td>Flytta raden – dra i sidled för att byta nivå</td></tr>
-      <tr><td>Dra <b>＋ Ny rad</b></td><td>Placera en ny rad var som helst</td></tr>
+      <tr><td>Dra <b>＋ Rad</b></td><td>Placera en ny rad var som helst</td></tr>
       <tr><td>Shift-klick på kryssruta</td><td>Välj / avmarkera ett intervall</td></tr>
       <tr><td>Dra kolumnrubrik</td><td>Byt ordning på fälten</td></tr>
       <tr><td>Dra rubrikens högerkant</td><td>Ändra kolumnbredd</td></tr>
     </table></section>
     <section><h3>Bilder och markeringar</h3><table>
       <tr><td>Dra en rad till en bild</td><td>Placera en markering för raden</td></tr>
-      <tr><td>Dra <b>＋ Ny rad</b> till en bild</td><td>Ny rad med markering</td></tr>
-      <tr><td><b>📍 Placera markering</b> + klick</td><td>Markering för den markerade raden</td></tr>
+      <tr><td>Dra <b>＋ Rad</b> till en bild</td><td>Ny rad med markering</td></tr>
+      <tr><td><b>📍</b> (placera markering) + klick</td><td>Markering för den markerade raden</td></tr>
       <tr><td>Klicka på en markering</td><td>Markera raden (och dess markeringar)</td></tr>
       <tr><td>Dra en markering</td><td>Flytta den</td></tr>
       <tr><td>Högerklick / <kbd>Delete</kbd></td><td>Ta bort markeringen</td></tr>
       <tr><td>Klicka siffran i listan</td><td>Visa radens markeringar</td></tr>
       <tr><td>Släpp bildfiler i bildytan</td><td>Lägg till bilder</td></tr>
-      <tr><td><kbd>Ctrl</kbd> + scrollhjul / zoomreglaget</td><td>Zooma bildytan (2–400 %). <b>Anpassa</b> = ryms i bredd, procentknappen = 100 %</td></tr>
-      <tr><td>Klicka på en bild</td><td>Markera bilden – <kbd>Ctrl</kbd> + scrollhjul zoomar då bara den. Klick på tom yta / <kbd>Esc</kbd> avmarkerar</td></tr>
-      <tr><td>Reglaget under en bild</td><td>Bildens storlek i förhållande till de andra (dubbelklick = 100 %)</td></tr>
-      <tr><td><b>⤓ Exportera bilder</b> / <b>⤓</b> på en bild</td><td>Ladda ner bilderna med siffermarkeringar (ZIP med teckenförklaring)</td></tr>
+      <tr><td><b>+ tagg</b> under bildnamnet</td><td>Tagga bilden (<kbd>Enter</kbd> lägger till, <kbd>Backspace</kbd> tar bort sista). Klicka på en tagg i bildytans verktygsrad för att bara visa bilder med den taggen</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + scrollhjul</td><td>Zooma in/ut alla bilder (2–400 %). <b>⤢</b> (Anpassa) = bilderna fyller bredden igen (standard), procentknappen = 100 %</td></tr>
+      <tr><td><b>⤓</b> i bildytan / <b>⤓</b> på en bild</td><td>Ladda ner bilderna med siffermarkeringar (ZIP med teckenförklaring)</td></tr>
     </table></section>
   </div>
   <div class="end"><button id="closeKeys">Stäng</button></div>
@@ -554,7 +556,7 @@ function renderBody() {
   }
   tbody.innerHTML = out.join('');
   const empty = $('#empty');
-  if (!R.length) { empty.hidden = false; empty.innerHTML = 'Listan är tom. <button id="bFirst" class="primary">Lägg till första raden</button> eller dra in <b>＋ Ny rad</b> hit.'; }
+  if (!R.length) { empty.hidden = false; empty.innerHTML = 'Listan är tom. <button id="bFirst" class="primary">Lägg till första raden</button> eller dra in <b>＋ Rad</b> hit.'; }
   else if (!view.visible.length) { empty.hidden = false; empty.textContent = ui.onlyChecked && !R.some(r => r.checked) ? 'Inga rader är valda – klicka på ”Alla” och kryssa i rader.' : 'Inga rader matchar filtret.'; }
   else empty.hidden = true;
 }
@@ -1403,7 +1405,7 @@ function refreshExport() {
   $('#exCopy').disabled = xl || iz;
   if (iz) {
     const a = imgExportArgs();
-    if (!a.names.length) { $('#exOut').value = 'Det finns inga bilder att exportera. Lägg till bilder i bildytan under listan.'; return; }
+    if (!a.names.length) { $('#exOut').value = 'Det finns inga bilder att exportera. Lägg till bilder i bildytan till höger om listan.'; return; }
     const per = a.names.map(n => { const c = visibleMarks(n, a.rows).length; return `  ${n}: ${c} markering${c === 1 ? '' : 'ar'}`; });
     const scopeTxt = { all: 'alla rader', filtered: 'rader som matchar filtret', visible: 'rader som syns i listan' }[a.scope];
     $('#exOut').value = `ZIP-fil med ${a.names.length} bild${a.names.length > 1 ? 'er' : ''} i full upplösning, med siffermarkeringar för ${scopeTxt}:\n\n${per.join('\n')}\n\n` +
@@ -1491,7 +1493,7 @@ function updateDirBtn() {
   b.classList.toggle('primary', !!imgDirPending);
   if (imgDir) { b.textContent = '📁 ' + imgDir.name; b.title = `Bilderna hämtas från mappen ”${imgDir.name}”. Klicka för att byta mapp.`; }
   else if (imgDirPending) { b.textContent = '📁 Koppla bildmappen ' + imgDirPending.name; b.title = 'Klicka för att ge behörighet att läsa bildmappen igen'; }
-  else { b.textContent = '📁 Välj bildmapp…'; b.title = 'Välj mappen där bilderna ligger – bilderna hittas då via namnen i CSV-filen'; }
+  else { b.textContent = '📁'; b.title = 'Välj mappen där bilderna ligger – bilderna hittas då via namnen i CSV-filen'; }
 }
 $('#bDir').onclick = () => imgDirPending ? connectPendingDir() : pickImgDir();
 // Efter omladdning har Chrome oftast glömt behörigheten till bildmappen. Då visas webbläsarens
@@ -1616,37 +1618,39 @@ function renderImages() {
         ? `<button data-im="up"${k === 0 ? ' disabled' : ''} title="Flytta tidigare">←</button><button data-im="down"${k === images.length - 1 ? ' disabled' : ''} title="Flytta senare">→</button>` +
           `<button data-im="exp" title="Ladda ner bilden med markeringar">⤓</button><button data-im="del" title="Ta bort bilden">✕</button>`
         : `<button data-im="dir" title="Välj mappen där bilden ligger">📁</button><button data-im="pick">Välj fil…</button><button data-im="del" title="Ta bort markeringarna">✕</button>`;
-      const lk = `<button data-im="lock" class="lockb" title="Lås bilden: visas alltid, även när ”Bara bilder med markerad rad” är på">${isLocked(n) ? '🔒' : '🔓'}</button>`;
+      const lk = `<button data-im="lock" class="lockb" title="Lås bilden: visas alltid, även när 🎯 (bara bilder med markerad rad) är på">${isLocked(n) ? '🔒' : '🔓'}</button>`;
       return `<div class="imgcard${isLocked(n) ? ' locked' : ''}" data-img="${esc(n)}">` +
-        (im ? `<div class="imgtop"><input type="range" class="isc" min="0" max="1000" value="${relToSlider(imgRel(n))}" title="Bildens storlek i förhållande till de andra (dubbelklick = 100 %)"><span class="iscv">${fmtPct(imgRel(n))}</span></div>` : '') +
-        `<div class="imghead"><b title="${esc(n)}">${esc(n)}</b>${lk}${btns}</div>` +
+        `<div class="imghead"><b title="${esc(n)}">${esc(n)}</b>${lk}${btns}</div><div class="itags"></div>` +
         (im ? `<div class="imgbox"><img src="${im.url}" draggable="false" alt=""><div class="mlayer"></div></div>`
             : `<div class="missing">Bilden ”${esc(n)}” hittades inte${imgDir ? ` i mappen ”${esc(imgDir.name)}”` : ''}. ` +
               `Klicka 📁 för att välja mappen där bilden ligger, eller ”Välj fil…”.</div>`) + `</div>`;
-    }).join('') || '<div class="lbl">Inga bilder ännu. Klicka ”Lägg till bild…” eller släpp bildfiler här.</div>';
+    }).join('') || '<div class="lbl">Inga bilder ännu. Klicka ＋ (Lägg till bild) eller släpp bildfiler här.</div>';
     for (const img of box.querySelectorAll('img')) img.addEventListener('load', () => {
       const im = images.find(i => i.name === img.closest('.imgcard').dataset.img);
       if (im) { im.nw = img.naturalWidth; im.nh = img.naturalHeight; }
-      if (prefs.imgZoomN == null && images.every(i => i.nw)) fitZoom();    // första gången: anpassa till bredden
-      else scheduleLayout();
+      syncZoomUI(); scheduleLayout();
     });
   }
   const has = names.length > 0;
   $('#split').hidden = !has;
-  $('#imgPane').style.height = has ? (prefs.imgPaneH || Math.round(innerHeight * 0.45)) + 'px' : 'auto';
+  $('#imgPane').style.width = has ? (prefs.imgPaneW || Math.round(innerWidth * 0.45)) + 'px' : '280px';
   syncZoomUI();
+  renderImgTags();
   renderMarkers();
   scheduleLayout();
 }
 /* ---- layout: bilderna packas sida vid sida; senare bilder hoppar upp i luckor (skyline-packning) ---- */
 const ZMIN = 0.02, ZMAX = 4, IGAP = 12;
-const zoomLevel = () => prefs.imgZoomN || 0.25;
-// relativ storlek per bild (5 %–2000 %), multipliceras med den gemensamma zoomen
-const RMIN = 0.05, RMAX = 20;
-const imgRel = n => (prefs.imgRel && prefs.imgRel[n]) || 1;
+// Anpassat läge (standard): zoomen räknas om så att den bredaste bilden fyller bildytans bredd.
+// Ctrl + scrollhjul, reglaget eller 100 % lämnar läget; ⤢ (Anpassa) slår på det igen.
+const fitOn = () => prefs.imgFit !== false;
+function fitLevel() {
+  const ws = images.filter(i => i.nw).map(i => i.nw);
+  if (!ws.length) return null;
+  return clamp(($('#imgScroll').clientWidth - 28 - 14 - 4) / Math.max(...ws), ZMIN, ZMAX);
+}
+const zoomLevel = () => (fitOn() && fitLevel()) || prefs.imgZoomN || 0.25;
 const isLocked = n => !!(prefs.imgLock && prefs.imgLock[n]);    // låst bild visas alltid
-const relToSlider = r => Math.round(1000 * Math.log(r / RMIN) / Math.log(RMAX / RMIN));
-const sliderToRel = v => RMIN * Math.pow(RMAX / RMIN, v / 1000);
 const fmtPct = z => (z < 0.1 ? (z * 100).toFixed(1).replace('.', ',') : Math.round(z * 100)) + ' %';
 function skyPlace(sky, w, W) {
   let best = null;
@@ -1675,7 +1679,7 @@ function sizeCard(c, z = zoomLevel()) {     // sätter bildens och kortets storl
   const img = c.querySelector('img'), b = c.querySelector('.imgbox');
   let iw = 240;
   if (img) {
-    const nw = img.naturalWidth || 400, nh = img.naturalHeight || 300, zz = z * imgRel(c.dataset.img);
+    const nw = img.naturalWidth || 400, nh = img.naturalHeight || 300, zz = z;
     iw = Math.max(4, Math.round(nw * zz));
     b.style.width = iw + 'px'; b.style.height = Math.max(3, Math.round(nh * zz)) + 'px';
   }
@@ -1684,7 +1688,6 @@ function sizeCard(c, z = zoomLevel()) {     // sätter bildens och kortets storl
   return cw;
 }
 function layoutImages() {
-  if ($('#imgs .imgcard.resizing')) return;        // ett storleksreglage dras – vänta tills det släpps
   const box = $('#imgs'), W = Math.max(120, $('#imgScroll').clientWidth - 28), z = zoomLevel();
   const sky = [{ x: 0, w: W + IGAP, y: 0 }];
   let maxB = 0, maxR = 0;
@@ -1696,67 +1699,18 @@ function layoutImages() {
     skyAdd(sky, p.x, cw + IGAP, p.y + ch + IGAP);
     maxB = Math.max(maxB, p.y + ch); maxR = Math.max(maxR, p.x + cw);
   }
-  box.style.height = maxB + 'px'; box.style.width = maxR + 'px';
+  box.style.height = maxB ? maxB + 'px' : ''; box.style.width = maxR ? maxR + 'px' : '';
 }
 let layoutRaf = 0;
-function scheduleLayout() { if (!layoutRaf) layoutRaf = requestAnimationFrame(() => { layoutRaf = 0; layoutImages(); }); }
+function scheduleLayout() { if (!layoutRaf) layoutRaf = requestAnimationFrame(() => { layoutRaf = 0; layoutImages(); if (fitOn()) syncZoomUI(); }); }
 new ResizeObserver(scheduleLayout).observe($('#imgScroll'));
 function syncZoomUI() {
   const z = zoomLevel();
-  $('#zoomR').value = Math.round(1000 * Math.log(z / ZMIN) / Math.log(ZMAX / ZMIN));
   $('#bZoom').textContent = fmtPct(z);
+  $('#bFit').classList.toggle('on', fitOn());
 }
-// Ändra en bilds relativa storlek. Kortet ligger still (bara storleken ändras);
-// övriga bilder flyttas först när reglaget släpps / scrollandet slutar.
-function setRel(card, r) {
-  r = clamp(r, RMIN, RMAX);
-  prefs.imgRel = prefs.imgRel || {}; prefs.imgRel[card.dataset.img] = r;
-  card.querySelector('.iscv').textContent = fmtPct(r);
-  card.classList.add('resizing');
-  sizeCard(card);
-  const box = $('#imgs'), bottom = card.offsetTop + card.offsetHeight, right = card.offsetLeft + card.offsetWidth;
-  if (bottom > box.offsetHeight) box.style.height = bottom + 'px';
-  if (right > box.offsetWidth) box.style.width = right + 'px';
-  savePrefsSoon();
-}
-$('#imgs').addEventListener('input', e => {          // reglaget: relativ storlek för en enskild bild
-  if (!e.target.classList.contains('isc')) return;
-  setRel(e.target.closest('.imgcard'), sliderToRel(+e.target.value));
-});
-/* markera en bild (klick) – Ctrl + scrollhjul zoomar då bara den */
-function pickImg(name) {
-  ui.pickedImg = name;
-  for (const c of $('#imgs').querySelectorAll('.imgcard')) c.classList.toggle('picked', c.dataset.img === name);
-}
-const pickedCard = () => ui.pickedImg ? [...$('#imgs').querySelectorAll('.imgcard')].find(c => c.dataset.img === ui.pickedImg && !c.hidden) : null;
-$('#imgScroll').addEventListener('pointerdown', e => {
-  if (e.button !== 0 || e.target.closest('.mark, button, input')) return;
-  const card = e.target.closest('.imgcard');
-  if (!card) return pickImg(null);                     // klick på tom yta avmarkerar
-  if (placing && e.target.closest('.imgbox')) return;  // placeringsläge: klicket blir en markering
-  pickImg(ui.pickedImg === card.dataset.img ? null : card.dataset.img);
-});
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && ui.pickedImg && !document.querySelector('dialog[open]') && !ui.selected) pickImg(null);
-});
-let relEndT;
-$('#imgs').addEventListener('change', e => {
-  if (!e.target.classList.contains('isc')) return;
-  e.target.closest('.imgcard').classList.remove('resizing');
-  layoutImages();
-});
-$('#imgs').addEventListener('dblclick', e => {
-  if (!e.target.classList.contains('isc')) return;
-  e.target.value = relToSlider(1);
-  e.target.dispatchEvent(new Event('input', { bubbles: true }));
-  e.target.dispatchEvent(new Event('change', { bubbles: true }));
-});
-function setZoom(z) { prefs.imgZoomN = clamp(z, ZMIN, ZMAX); syncZoomUI(); layoutImages(); savePrefsSoon(); }
-function fitZoom() {
-  const ws = images.filter(i => i.nw).map(i => i.nw * imgRel(i.name));
-  if (!ws.length) return;
-  setZoom(($('#imgScroll').clientWidth - 28 - 14 - 4) / Math.max(...ws));
-}
+function setZoom(z) { prefs.imgFit = false; prefs.imgZoomN = clamp(z, ZMIN, ZMAX); syncZoomUI(); layoutImages(); savePrefsSoon(); }
+function fitZoom() { prefs.imgFit = true; syncZoomUI(); layoutImages(); $('#imgScroll').scrollLeft = 0; savePrefsSoon(); }
 function renderMarkers() {
   const R = state.rows, per = new Map(), lf = state.fields[0];
   let total = 0, shown = 0;
@@ -1769,19 +1723,83 @@ function renderMarkers() {
     per.get(m.img).push(`<div class="${cls}" data-id="${r.id}" data-k="${k}" style="left:${m.x * 100}%;top:${m.y * 100}%" title="${esc(view.num[i] + ' ' + (r.values[lf.id] || ''))}">${view.markNo[i]}</div>`);
   }));
   for (const card of $('#imgs').querySelectorAll('.imgcard')) {
-    card.classList.toggle('picked', card.dataset.img === ui.pickedImg);
     const arr = per.get(card.dataset.img) || [], ml = card.querySelector('.mlayer');
     if (ml) ml.innerHTML = arr.join('');
     card.querySelector('.imghead b').title = card.dataset.img + (arr.length ? ` – ${arr.length} markering${arr.length > 1 ? 'ar' : ''}` : '');
   }
-  $('#imgInfo').textContent = total ? `${shown}${shown !== total ? ' av ' + total : ''} markeringar visas` : '';
+  $('#imgInfo').textContent = total ? `${shown}${shown !== total ? '/' + total : ''} st` : '';
+  $('#imgInfo').title = total ? `${shown}${shown !== total ? ' av ' + total : ''} markeringar visas` : '';
   applyImgFilter();
 }
-function applyImgFilter() {       // "Bara bilder med markerad rad"
+/* ---- taggar på bilder (sparas i webbläsaren per bildnamn, som låsningen) ---- */
+const imgTags = n => (prefs.imgTags && prefs.imgTags[n]) || [];
+const imgTagSel = () => new Set(prefs.imgTagFilter || []);
+function setImgTags(n, tags) {
+  prefs.imgTags = prefs.imgTags || {};
+  if (tags.length) prefs.imgTags[n] = tags; else delete prefs.imgTags[n];
+  savePrefs(); renderImgTags(); applyImgFilter(); scheduleLayout();
+}
+function addImgTags(n, text) {
+  const add = splitTags(text).filter(t => !imgTags(n).includes(t));
+  if (add.length) setImgTags(n, [...imgTags(n), ...add]);
+}
+function renderImgTags() {
+  const names = imageNames(), counts = new Map();
+  for (const n of names) for (const t of imgTags(n)) counts.set(t, (counts.get(t) || 0) + 1);
+  const sel = imgTagSel(), keep = [...sel].filter(t => counts.has(t));
+  if (keep.length !== sel.size) { prefs.imgTagFilter = keep; savePrefs(); }
+  const tags = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'sv'));
+  const all = new Set([...tags]); for (const r of state.rows) for (const t of r.tags) all.add(t);
+  $('#imgtaglist').innerHTML = [...all].sort((a, b) => a.localeCompare(b, 'sv')).map(t => `<option value="${esc(t)}">`).join('');
+  const on = new Set(keep);
+  $('#imgTagFilter').innerHTML = tags.length
+    ? `<span class="lbl" title="Visa bara bilder med någon av de valda taggarna">🏷</span>` +
+      tags.map(t => `<span class="chip${on.has(t) ? ' on' : ''}" data-itf="${esc(t)}" style="--h:${hue(t)}">${esc(t)} <i>${counts.get(t)}</i></span>`).join('') +
+      (on.size ? `<button data-itf-clear title="Visa alla bilder igen">✕</button>` : '')
+    : '';
+  for (const c of $('#imgs').querySelectorAll('.imgcard')) {
+    const box = c.querySelector('.itags'); if (!box) continue;
+    const inp = box.querySelector('.itagin'), focused = inp && document.activeElement === inp, v = inp ? inp.value : '';
+    box.innerHTML = imgTags(c.dataset.img).map(t => `<span class="chip${on.has(t) ? ' on' : ''}" data-itag="${esc(t)}" style="--h:${hue(t)}">${esc(t)}<b class="x" title="Ta bort taggen">×</b></span>`).join('') +
+      `<input class="itagin" placeholder="+ tagg" list="imgtaglist">`;
+    if (focused) { const ni = box.querySelector('.itagin'); ni.value = v; ni.focus(); }
+  }
+}
+$('#imgTagFilter').addEventListener('click', e => {
+  if (e.target.closest('[data-itf-clear]')) prefs.imgTagFilter = [];
+  else {
+    const c = e.target.closest('[data-itf]'); if (!c) return;
+    const sel = imgTagSel(), t = c.dataset.itf;
+    if (sel.has(t)) sel.delete(t); else sel.add(t);
+    prefs.imgTagFilter = [...sel];
+  }
+  savePrefs(); renderImgTags(); applyImgFilter();
+});
+$('#imgs').addEventListener('click', e => {
+  const x = e.target.closest('.itags .x');
+  if (x) { const n = x.closest('.imgcard').dataset.img, t = x.closest('[data-itag]').dataset.itag; setImgTags(n, imgTags(n).filter(v => v !== t)); }
+});
+$('#imgs').addEventListener('keydown', e => {
+  const t = e.target; if (!t.matches('input.itagin')) return;
+  const n = t.closest('.imgcard').dataset.img;
+  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); const v = t.value; t.value = ''; if (v.trim()) addImgTags(n, v); }
+  else if (e.key === 'Backspace' && !t.value && imgTags(n).length) { e.preventDefault(); setImgTags(n, imgTags(n).slice(0, -1)); }
+  else if (e.key === 'Escape') { t.value = ''; t.blur(); }
+});
+$('#imgs').addEventListener('focusout', e => {
+  const t = e.target; if (!t.matches('input.itagin') || !t.value.trim()) return;
+  const n = t.closest('.imgcard').dataset.img, v = t.value; t.value = '';
+  setTimeout(() => addImgTags(n, v));
+});
+function applyImgFilter() {       // "Bara bilder med markerad rad" + taggfilter för bilder
   const on = !!prefs.imgOnlySel, r = on && ui.selected ? state.rows[idxOf(ui.selected)] : null;
-  const set = new Set(r ? r.marks.map(m => m.img) : []);
+  const set = new Set(r ? r.marks.map(m => m.img) : []), tsel = imgTagSel();
   let changed = false;
-  for (const c of $('#imgs').querySelectorAll('.imgcard')) { const h = !!r && !set.has(c.dataset.img) && !isLocked(c.dataset.img); if (c.hidden !== h) { c.hidden = h; changed = true; } }
+  for (const c of $('#imgs').querySelectorAll('.imgcard')) {
+    const n = c.dataset.img;
+    const h = (!!r && !set.has(n) && !isLocked(n)) || (tsel.size > 0 && !imgTags(n).some(t => tsel.has(t)));
+    if (c.hidden !== h) { c.hidden = h; changed = true; }
+  }
   if (changed) layoutImages();
   const note = $('#imgNote');
   note.hidden = !on || (r && set.size > 0);
@@ -1833,7 +1851,20 @@ function pointOn(box, e) {
   return { x: clamp((e.clientX - rc.left) / rc.width, 0, 1), y: clamp((e.clientY - rc.top) / rc.height, 0, 1) };
 }
 
-$('#bAddImg').onclick = () => { pickFor = null; $('#imgInput').click(); };
+// Välj bildfiler. Väljaren öppnas i den valda bildmappen (annars CSV-filens mapp),
+// inte i den mapp webbläsaren senast använde.
+async function pickImageFiles(asName) {
+  if (!FS) { pickFor = asName; return $('#imgInput').click(); }
+  const opts = { multiple: !asName, types: [{ description: 'Bilder', accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.avif'] } }] };
+  if (imgDir) opts.startIn = imgDir;
+  else if (fileHandle) opts.startIn = fileHandle;
+  else opts.id = 'hierarkirator-bildfiler';
+  try {
+    const hs = await showOpenFilePicker(opts);
+    addImageFiles(await Promise.all(hs.map(h => h.getFile())), asName);
+  } catch (e) { if (e.name !== 'AbortError') toast('Kunde inte öppna bilden: ' + e.message); }
+}
+$('#bAddImg').onclick = () => pickImageFiles(null);
 $('#imgInput').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; addImageFiles(fs, pickFor); pickFor = null; });
 $('#bPlace').onclick = () => {
   placing = !placing;
@@ -1846,19 +1877,10 @@ let prefsT;
 const savePrefsSoon = () => { clearTimeout(prefsT); prefsT = setTimeout(savePrefs, 400); };
 $('#bZoom').onclick = () => setZoom(1);
 $('#bFit').onclick = fitZoom;
-$('#zoomR').addEventListener('input', e => setZoom(ZMIN * Math.pow(ZMAX / ZMIN, e.target.value / 1000)));
 $('#bExpImg').onclick = exportAllImages;
 $('#imgScroll').addEventListener('wheel', e => {     // Ctrl + scrollhjul = zooma hela bildytan
   if (!e.ctrlKey) return;
   e.preventDefault();
-  const pc = pickedCard();
-  if (pc) {      // markerad bild: zooma bara den
-    setRel(pc, imgRel(pc.dataset.img) * Math.exp(-clamp(e.deltaY, -300, 300) * 0.0015));
-    pc.querySelector('.isc').value = relToSlider(imgRel(pc.dataset.img));
-    clearTimeout(relEndT);
-    relEndT = setTimeout(() => { pc.classList.remove('resizing'); layoutImages(); }, 350);
-    return;
-  }
   const sc = $('#imgScroll'), r = sc.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
   const fx = (sc.scrollLeft + mx) / sc.scrollWidth, fy = (sc.scrollTop + my) / sc.scrollHeight;
   setZoom(zoomLevel() * Math.exp(-clamp(e.deltaY, -300, 300) * 0.0015));
@@ -1877,7 +1899,7 @@ $('#imgs').addEventListener('click', e => {
     applyImgFilter();
     return;
   }
-  if (m === 'pick') { pickFor = name; $('#imgInput').click(); }
+  if (m === 'pick') pickImageFiles(name);
   else if (m === 'exp') exportOneImage(name);
   else if (m === 'dir') imgDirPending ? connectPendingDir() : pickImgDir();
   else if (m === 'up' || m === 'down') {
@@ -1888,6 +1910,7 @@ $('#imgs').addEventListener('click', e => {
     const n = state.rows.reduce((a, r) => a + r.marks.filter(x => x.img === name).length, 0);
     if (!confirm(`Ta bort bilden ”${name}”${n ? ` och dess ${n} markeringar` : ''}?`)) return;
     if (k >= 0) { URL.revokeObjectURL(images[k].url); images.splice(k, 1); storeImages(); }
+    if (prefs.imgTags && prefs.imgTags[name]) { delete prefs.imgTags[name]; savePrefs(); }
     if (n) { mutate(() => state.rows.forEach(r => r.marks = r.marks.filter(x => x.img !== name))); quickSave(); }
     else render();
   }
@@ -1961,9 +1984,9 @@ $('#imgPane').addEventListener('drop', e => {
 });
 $('#split').addEventListener('pointerdown', e => {
   e.preventDefault();
-  const sy = e.clientY, h0 = $('#imgPane').getBoundingClientRect().height, max = $('#panes').getBoundingClientRect().height - 120;
+  const sx = e.clientX, w0 = $('#imgPane').getBoundingClientRect().width, max = $('#panes').getBoundingClientRect().width - 200;
   const sp = $('#split'); sp.setPointerCapture(e.pointerId);
-  const mv = ev => { prefs.imgPaneH = Math.round(clamp(h0 - (ev.clientY - sy), 80, max)); $('#imgPane').style.height = prefs.imgPaneH + 'px'; };
+  const mv = ev => { prefs.imgPaneW = Math.round(clamp(w0 - (ev.clientX - sx), 200, max)); $('#imgPane').style.width = prefs.imgPaneW + 'px'; };
   const up = () => { sp.removeEventListener('pointermove', mv); sp.removeEventListener('pointerup', up); savePrefs(); };
   sp.addEventListener('pointermove', mv); sp.addEventListener('pointerup', up);
 });
