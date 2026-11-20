@@ -38,8 +38,15 @@ input,select,textarea{font:inherit;color:var(--text);background:var(--panel);bor
 .newchip:active{cursor:grabbing}
 #search{width:130px}
 .chip{display:inline-flex;align-items:center;gap:3px;border-radius:10px;padding:0 8px;font-size:12px;line-height:20px;cursor:pointer;user-select:none;
-  background:hsl(var(--h) 70% 91%);color:hsl(var(--h) 45% 28%);border:1px solid transparent;white-space:nowrap}
-@media (prefers-color-scheme: dark){.chip{background:hsl(var(--h) 30% 24%);color:hsl(var(--h) 70% 84%)}}
+  background:hsl(var(--h) calc(70% * var(--s, 1)) 91%);color:hsl(var(--h) calc(45% * var(--s, 1)) 28%);border:1px solid transparent;white-space:nowrap}
+@media (prefers-color-scheme: dark){.chip{background:hsl(var(--h) calc(30% * var(--s, 1)) 24%);color:hsl(var(--h) calc(70% * var(--s, 1)) 84%)}}
+#tagColorPop{position:fixed;z-index:60;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px;
+  box-shadow:0 6px 20px rgba(0,0,0,.2);display:flex;flex-direction:column;gap:6px;font-size:12px}
+#tagColorPop .sw{display:grid;grid-template-columns:repeat(7,22px);gap:5px}
+#tagColorPop .sw button{width:22px;height:22px;padding:0;border-radius:50%;border:2px solid transparent;
+  background:hsl(var(--h) calc(70% * var(--s, 1)) 80%)}
+#tagColorPop .sw button.cur{border-color:var(--text)}
+#tagColorPop .sw button:hover{border-color:var(--accent)}
 .chip.on{border-color:currentColor;box-shadow:0 0 0 1px currentColor inset;font-weight:600}
 .chip i{font-style:normal;opacity:.65}
 .chip .x{font-weight:400;opacity:.5;margin-left:2px}
@@ -178,6 +185,8 @@ button.ic{padding:3px 7px;min-width:30px}
 .mk{display:inline-flex;align-items:center;justify-content:center;align-self:center;flex:none;min-width:20px;height:20px;
   padding:0 3px;margin-right:6px;font-size:10px;line-height:16px;cursor:pointer}
 #tbody tr.sel .mk{background:#ffd60a}
+body.hl-checked #tbody tr.sel:not(.checked) .mk{background:#fff}
+body.hl-checked #tbody tr.checked .mk{background:#ffd60a}
 </style>
 </head>
 <body>
@@ -231,6 +240,7 @@ button.ic{padding:3px 7px;min-width:30px}
     <button id="bDir" class="ic" title="Välj mappen där bilderna ligger – bilderna hittas då via namnen i CSV-filen">📁</button>
     <button id="bAddImg" class="ic" title="Lägg till bild…">＋</button>
     <button id="bPlace" class="ic" title="Placera markering: klicka i en bild för att placera en markering för den markerade raden">📍</button>
+    <button id="bHlMode" class="ic" title="Markera i bilderna: den markerade raden">◉</button>
     <button id="bOnlySel" class="ic" title="Visa bara de bilder där den markerade raden har markeringar">🎯</button>
     <span class="sep"></span>
     <button id="bFit" class="ic" title="Anpassa: skala bilderna (upp eller ner) så att de fyller bildytans bredd">⤢</button>
@@ -247,7 +257,7 @@ button.ic{padding:3px 7px;min-width:30px}
 </div>
 <input type="file" id="imgInput" accept="image/*" multiple hidden>
 <footer>
-  Dra i <b>⋮⋮</b> eller i radens punkt/indrag för att flytta den (med underrader) – dra i sidled för att välja nivå.
+  Dra i <b>⋮⋮</b> eller i radens punkt/indrag för att flytta den (med underrader) – dra i sidled för att välja nivå, håll <kbd>Ctrl</kbd> för att kopiera.
   <kbd>Enter</kbd> bekräftar ett fält · <kbd>Enter</kbd> på markerad rad ger ny rad · <kbd>Delete</kbd> tar bort · <kbd>?</kbd> alla kortkommandon · Autosparning var 10:e sekund.
 </footer>
 <datalist id="taglist"></datalist>
@@ -295,8 +305,12 @@ button.ic{padding:3px 7px;min-width:30px}
     </table></section>
     <section><h3>Mus</h3><table>
       <tr><td>Dra <b>⋮⋮</b> eller punkten/indraget</td><td>Flytta raden – dra i sidled för att byta nivå</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + dra</td><td>Kopiera raden (med underrader) i stället för att flytta den</td></tr>
+      <tr><td>Dra en ikryssad rad</td><td>Flytta alla ikryssade rader (med <kbd>Ctrl</kbd>: kopiera dem)</td></tr>
       <tr><td>Dra <b>＋ Rad</b></td><td>Placera en ny rad var som helst</td></tr>
+      <tr><td>Klick på kryssruta</td><td>Välj / avmarkera raden och alla rader under den</td></tr>
       <tr><td>Shift-klick på kryssruta</td><td>Välj / avmarkera ett intervall</td></tr>
+      <tr><td>Högerklicka på en tagg</td><td>Välj taggens färg</td></tr>
       <tr><td>Dra kolumnrubrik</td><td>Byt ordning på fälten</td></tr>
       <tr><td>Dra rubrikens högerkant</td><td>Ändra kolumnbredd</td></tr>
     </table></section>
@@ -304,6 +318,7 @@ button.ic{padding:3px 7px;min-width:30px}
       <tr><td>Dra en rad till en bild</td><td>Placera en markering för raden</td></tr>
       <tr><td>Dra <b>＋ Rad</b> till en bild</td><td>Ny rad med markering</td></tr>
       <tr><td><b>📍</b> (placera markering) + klick</td><td>Markering för den markerade raden</td></tr>
+      <tr><td><b>◉</b> / <b>☑</b> i bildytan</td><td>Lyft fram markeringarna för den markerade raden (◉) eller för alla ikryssade rader (☑). 🎯 följer samma val</td></tr>
       <tr><td>Klicka på en markering</td><td>Markera raden (och dess markeringar)</td></tr>
       <tr><td>Dra en markering</td><td>Flytta den</td></tr>
       <tr><td>Högerklick / <kbd>Delete</kbd></td><td>Ta bort markeringen</td></tr>
@@ -362,6 +377,43 @@ const newId = p => p + (++seq).toString(36) + Math.random().toString(36).slice(2
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const hue = t => { let h = 7; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 360; };
+// Taggfärg: vald nyans (0–359), 'grey' eller automatisk (från namnet). Sparas i webbläsaren per taggnamn.
+const TAG_HUES = [0, 20, 38, 52, 75, 110, 150, 175, 195, 215, 240, 270, 300, 330];
+function tagStyle(t) {
+  const c = prefs.tagColors && prefs.tagColors[t];
+  return c === 'grey' ? '--h:0;--s:0' : `--h:${c != null ? c : hue(t)}`;
+}
+function closeTagColor() { const p = document.getElementById('tagColorPop'); if (p) p.remove(); }
+function openTagColor(t, x, y) {
+  closeTagColor();
+  const cur = prefs.tagColors && prefs.tagColors[t];
+  const pop = document.createElement('div');
+  pop.id = 'tagColorPop';
+  pop.innerHTML = `<div>Färg för <span class="chip" style="${tagStyle(t)}">${esc(t)}</span></div>` +
+    `<div class="sw">${TAG_HUES.map(h => `<button data-c="${h}" style="--h:${h}" class="${cur === h ? 'cur' : ''}" title="Nyans ${h}°"></button>`).join('')}` +
+    `<button data-c="grey" style="--h:0;--s:0" class="${cur === 'grey' ? 'cur' : ''}" title="Grå"></button></div>` +
+    `<button data-c="auto"${cur == null ? ' disabled' : ''}>Automatisk färg</button>`;
+  document.body.appendChild(pop);
+  const r = pop.getBoundingClientRect();
+  pop.style.left = Math.max(4, Math.min(x, innerWidth - r.width - 4)) + 'px';
+  pop.style.top = Math.max(4, Math.min(y, innerHeight - r.height - 4)) + 'px';
+  pop.addEventListener('click', e => {
+    const b = e.target.closest('[data-c]'); if (!b) return;
+    prefs.tagColors = prefs.tagColors || {};
+    const c = b.dataset.c;
+    if (c === 'auto') delete prefs.tagColors[t];
+    else prefs.tagColors[t] = c === 'grey' ? 'grey' : +c;
+    savePrefs(); closeTagColor(); render();
+  });
+}
+document.addEventListener('contextmenu', e => {
+  const c = e.target.closest && e.target.closest('.chip[data-tag], .chip[data-ftag], .chip[data-itag]');
+  if (!c) return;
+  e.preventDefault();
+  openTagColor(c.dataset.tag || c.dataset.ftag || c.dataset.itag, e.clientX, e.clientY);
+});
+document.addEventListener('mousedown', e => { if (!e.target.closest || !e.target.closest('#tagColorPop')) closeTagColor(); }, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTagColor(); });
 
 /* ---------------- state ---------------- */
 let state;                 // {fields:[{id,name}], rows:[{id,level,values,tags,collapsed}], levelName, tagName}
@@ -532,7 +584,7 @@ function computeView(ignoreCollapse = false) {
 
 /* ---------------- rendering ---------------- */
 function chip(t, removable) {
-  return `<span class="chip${ui.tags.has(t) ? ' on' : ''}" data-tag="${esc(t)}" style="--h:${hue(t)}">${esc(t)}${removable ? '<b class="x" title="Ta bort taggen">×</b>' : ''}</span>`;
+  return `<span class="chip${ui.tags.has(t) ? ' on' : ''}" data-tag="${esc(t)}" style="${tagStyle(t)}" title="Högerklicka för att välja färg">${esc(t)}${removable ? '<b class="x" title="Ta bort taggen">×</b>' : ''}</span>`;
 }
 function render(focus) {
   const keep = focus || captureFocus();
@@ -572,7 +624,7 @@ function renderBody() {
     });
     cellList.splice(tagIndex(), 0, `<td class="tags"><div class="tagbox">${r.tags.map(t => chip(t, true)).join('')}<input class="tagin" placeholder="+ tagg" list="taglist"></div></td>`);
     out.push(`<tr data-id="${r.id}" class="lvl${r.level}${ctx ? ' ctx' : ''}${ui.selected === r.id ? ' sel' : ''}${r.checked ? ' checked' : ''}">` +
-      `<td class="hd"><div class="hdw"><span class="grip" draggable="true" title="Dra för att flytta (med underrader)">⋮⋮</span><input type="checkbox" class="ck" tabindex="-1" title="Välj raden (Shift-klick väljer ett intervall)"${r.checked ? ' checked' : ''}><span class="num">${prefs.numbering ? view.num[i] : ''}</span></div></td>` +
+      `<td class="hd"><div class="hdw"><span class="grip" draggable="true" title="Dra för att flytta (med underrader) – håll Ctrl för att kopiera. Är raden ikryssad följer alla ikryssade rader med.">⋮⋮</span><input type="checkbox" class="ck" tabindex="-1" title="Välj raden med alla rader under den (Shift-klick väljer ett intervall)"${r.checked ? ' checked' : ''}><span class="num">${prefs.numbering ? view.num[i] : ''}</span></div></td>` +
       cellList.join('') +
       `<td class="act"><button data-a="sib" title="Ny rad på samma nivå (Enter)">＋</button><button data-a="child" title="Ny underrad (Ctrl+Enter)">↳</button><button data-a="del" title="Ta bort rad">✕</button></td></tr>`);
   }
@@ -610,7 +662,7 @@ function renderTagFilter() {
   $('#taglist').innerHTML = opts;
   $('#imgtaglist').innerHTML = opts;
   if (!tags.length) { $('#tagfilter').innerHTML = '<span class="lbl">(inga ännu)</span>'; return; }
-  $('#tagfilter').innerHTML = tags.map(t => `<span class="chip${ui.tags.has(t) ? ' on' : ''}" data-ftag="${esc(t)}" style="--h:${hue(t)}">${esc(t)} <i>${counts.get(t)}</i></span>`).join('') +
+  $('#tagfilter').innerHTML = tags.map(t => `<span class="chip${ui.tags.has(t) ? ' on' : ''}" data-ftag="${esc(t)}" style="${tagStyle(t)}" title="Klicka för att filtrera · högerklicka för att välja färg">${esc(t)} <i>${counts.get(t)}</i></span>`).join('') +
     (ui.tags.size > 1 ? `<button id="bTagMode" title="Hur flera valda taggar kombineras">${ui.tagMode === 'all' ? 'Alla valda' : 'Någon vald'}</button>` : '') +
     (filterActive() ? `<label class="lbl"><input type="checkbox" id="cbKids"${ui.withChildren ? ' checked' : ''}> inkl. underrader</label><button id="bClearF">Rensa filter</button>` : '');
 }
@@ -853,8 +905,11 @@ tbody.addEventListener('click', e => {
   if (t.classList.contains('mk')) { selectRow(r.id); updateMarkSel(true, true); return; }
   if (t.classList.contains('ck')) {
     const vis = view.visible, pos = vis.indexOf(i), last = ui.lastCk ? vis.indexOf(idxOf(ui.lastCk)) : -1;
-    if (e.shiftKey && last >= 0) setChecked(vis.slice(Math.min(pos, last), Math.max(pos, last) + 1).map(k => state.rows[k]), t.checked);
-    else setChecked([r], t.checked);
+    // En rad kryssas i/ur tillsammans med alla rader under den i hierarkin (även dolda).
+    const tops = e.shiftKey && last >= 0 ? vis.slice(Math.min(pos, last), Math.max(pos, last) + 1) : [i];
+    const rows = new Set();
+    for (const k of tops) for (let j = k, end = subEnd(k); j < end; j++) rows.add(state.rows[j]);
+    setChecked([...rows], t.checked);
     ui.lastCk = r.id;
     return;
   }
@@ -938,9 +993,14 @@ document.addEventListener('mousedown', e => {   // klick utanför listan avmarke
 /* ---------------- drag & drop: rows ---------------- */
 tbody.addEventListener('dragstart', e => {
   const g = e.target.closest && e.target.closest('.grip, .dh'); if (!g) return;
-  const tr = g.closest('tr'), i = idxOf(tr.dataset.id), end = subEnd(i);
-  drag = { kind: 'row', first: tr.dataset.id, ids: new Set(state.rows.slice(i, end).map(r => r.id)), origLevel: state.rows[i].level, startX: e.clientX };
-  e.dataTransfer.effectAllowed = 'move';
+  const tr = g.closest('tr'), i = idxOf(tr.dataset.id), R = state.rows;
+  // Är raden ikryssad följer alla ikryssade rader med (var och en med sina underrader).
+  const tops = R[i].checked ? R.map((r, k) => r.checked ? k : -1).filter(k => k >= 0) : [i];
+  const ids = new Set();
+  for (const k of tops) for (let j = k, end = subEnd(k); j < end; j++) ids.add(R[j].id);
+  const first = R.find(r => ids.has(r.id));
+  drag = { kind: 'row', first: first.id, ids, n: ids.size, copy: e.ctrlKey, origLevel: first.level, startX: e.clientX };
+  e.dataTransfer.effectAllowed = 'copyMove';
   e.dataTransfer.setData('application/x-hierarkirator', tr.dataset.id);
   e.dataTransfer.setDragImage(tr, 16, 14);
   requestAnimationFrame(() => { for (const r of tbody.rows) if (drag && drag.ids.has(r.dataset.id)) r.classList.add('dragging'); });
@@ -962,12 +1022,12 @@ function computeTarget(e) {
   const trs = tbody.rows, n = trs.length, R = state.rows;
   let lo = 0, hi = n;
   while (lo < hi) { const m = (lo + hi) >> 1, rc = trs[m].getBoundingClientRect(); if (e.clientY < rc.top + rc.height / 2) hi = m; else lo = m + 1; }
-  const gap = lo;
-  let a = gap - 1; while (a >= 0 && drag.ids.has(trs[a].dataset.id)) a--;
-  let b = gap; while (b < n && drag.ids.has(trs[b].dataset.id)) b++;
+  const gap = lo, ex = drag.copy ? new Set() : drag.ids;
+  let a = gap - 1; while (a >= 0 && ex.has(trs[a].dataset.id)) a--;
+  let b = gap; while (b < n && ex.has(trs[b].dataset.id)) b++;
   const A = a >= 0 ? R[idxOf(trs[a].dataset.id)] : null;
   const B = b < n ? R[idxOf(trs[b].dataset.id)] : null;
-  const rest = R.filter(r => !drag.ids.has(r.id));
+  const rest = R.filter(r => !ex.has(r.id));
   const idx = B ? rest.indexOf(B) : rest.length;
   const prev = rest[idx - 1], next = rest[idx];
   let max = prev ? prev.level + 1 : 1; max = A ? Math.min(max, A.level + 1) : Math.min(max, 1);
@@ -994,7 +1054,8 @@ function showDropline(t) {
   dl.style.top = t.y + 'px';
   dl.style.left = t.x + 'px';
   dl.style.width = Math.max(120, wrap.scrollWidth - t.x - 20) + 'px';
-  dl.firstElementChild.textContent = `Nivå ${t.L}` + (t.parentName ? ` · under ”${t.parentName.slice(0, 40)}”` : '');
+  const what = drag && drag.kind === 'row' ? (drag.copy ? 'Kopiera' : 'Flytta') + (drag.n > 1 ? ` ${drag.n} rader` : '') + ' · ' : '';
+  dl.firstElementChild.textContent = what + `Nivå ${t.L}` + (t.parentName ? ` · under ”${t.parentName.slice(0, 40)}”` : '');
 }
 function endDrag() {
   drag = null;
@@ -1006,7 +1067,11 @@ function endDrag() {
 main.addEventListener('dragover', e => {
   if (!drag || drag.kind === 'field') return;
   e.preventDefault();
-  e.dataTransfer.dropEffect = drag.kind === 'new' ? 'copy' : 'move';
+  if (drag.kind === 'row') {
+    drag.copy = e.ctrlKey;
+    for (const r of tbody.rows) r.classList.toggle('dragging', !drag.copy && drag.ids.has(r.dataset.id));
+  }
+  e.dataTransfer.dropEffect = drag.kind === 'new' || drag.copy ? 'copy' : 'move';
   const mr = main.getBoundingClientRect();
   if (e.clientY < mr.top + 60) main.scrollTop -= 14; else if (e.clientY > mr.bottom - 40) main.scrollTop += 14;
   drag.target = computeTarget(e);
@@ -1016,15 +1081,18 @@ main.addEventListener('dragleave', e => { if (drag && !main.contains(e.relatedTa
 main.addEventListener('drop', e => {
   if (!drag || drag.kind === 'field') return;
   e.preventDefault();
-  const t = drag.target || computeTarget(e), kind = drag.kind, ids = drag.ids;
+  if (drag.kind === 'row') drag.copy = e.ctrlKey;
+  const t = computeTarget(e), kind = drag.kind, ids = drag.ids, copy = kind === 'row' && drag.copy;
   endDrag();
   let moved;
   mutate(() => {
     const R = state.rows;
-    const blk = kind === 'new' ? [mkRow(t.L)] : R.filter(r => ids.has(r.id));
+    let blk = kind === 'new' ? [mkRow(t.L)] : R.filter(r => ids.has(r.id));
     if (!blk.length) return;
+    // Kopior får nya id, inga bildmarkeringar och är inte ikryssade.
+    if (copy) blk = blk.map(r => ({ ...r, id: newId('r'), values: { ...r.values }, tags: [...r.tags], marks: [], checked: false }));
     const d = t.L - blk[0].level; blk.forEach(r => r.level += d);
-    const rest = R.filter(r => !ids.has(r.id));
+    const rest = copy ? R.slice() : R.filter(r => !ids.has(r.id));
     const idx = t.bId ? rest.findIndex(r => r.id === t.bId) : rest.length;
     rest.splice(idx < 0 ? rest.length : idx, 0, ...blk);
     state.rows = rest;
@@ -1922,13 +1990,13 @@ function fitZoom() {
   syncZoomUI(); layoutImages(); $('#imgScroll').scrollLeft = 0; savePrefsSoon();
 }
 function renderMarkers() {
-  const R = state.rows, per = new Map(), lf = state.fields[0];
+  const R = state.rows, per = new Map(), lf = state.fields[0]; const hl = hlIds();
   let total = 0, shown = 0;
   R.forEach((r, i) => r.marks.forEach((m, k) => {
     total++;
     if (view.direct && !view.direct[i]) return;      // bara framfiltrerade rader
     shown++;
-    const cls = 'mark' + (ui.selected === r.id ? ' sel' : '') + (ui.selMark && ui.selMark.id === r.id && ui.selMark.k === k ? ' cur' : '');
+    const cls = 'mark' + (hl.has(r.id) ? ' sel' : '') + (ui.selMark && ui.selMark.id === r.id && ui.selMark.k === k ? ' cur' : '');
     if (!per.has(m.img)) per.set(m.img, []);
     per.get(m.img).push(`<div class="${cls}" data-id="${r.id}" data-k="${k}" style="left:${m.x * 100}%;top:${m.y * 100}%" title="${esc(view.num[i] + ' ' + (r.values[lf.id] || ''))}">${view.markNo[i]}</div>`);
   }));
@@ -1956,7 +2024,7 @@ function renderImgTags() {
   for (const c of $('#imgs').querySelectorAll('.imgcard')) {
     const box = c.querySelector('.itags'); if (!box) continue;
     const inp = box.querySelector('.itagin'), focused = inp && document.activeElement === inp, v = inp ? inp.value : '';
-    box.innerHTML = imgTags(c.dataset.img).map(t => `<span class="chip${ui.tags.has(t) ? ' on' : ''}" data-itag="${esc(t)}" style="--h:${hue(t)}">${esc(t)}<b class="x" title="Ta bort taggen">×</b></span>`).join('') +
+    box.innerHTML = imgTags(c.dataset.img).map(t => `<span class="chip${ui.tags.has(t) ? ' on' : ''}" data-itag="${esc(t)}" style="${tagStyle(t)}" title="Klicka för att filtrera · högerklicka för att välja färg">${esc(t)}<b class="x" title="Ta bort taggen">×</b></span>`).join('') +
       `<input class="itagin" placeholder="+ tagg" list="imgtaglist">`;
     if (focused) { const ni = box.querySelector('.itagin'); ni.value = v; ni.focus(); }
   }
@@ -1985,26 +2053,51 @@ function imgMatchesTags(n) {
   const has = t => tags.includes(t);
   return ui.tagMode === 'all' ? [...ui.tags].every(has) : [...ui.tags].some(has);
 }
-function applyImgFilter() {       // "Bara bilder med markerad rad" + gemensamt taggfilter för bilder
-  const on = !!prefs.imgOnlySel, r = on && ui.selected ? state.rows[idxOf(ui.selected)] : null;
-  const set = new Set(r ? r.marks.map(m => m.img) : []);
+// Vilka rader som lyfts fram i bilderna: den markerade raden (standard) eller alla ikryssade rader.
+const hlChecked = () => !!prefs.hlChecked;
+function hlIds() {
+  if (hlChecked()) return new Set(state.rows.filter(r => r.checked).map(r => r.id));
+  return new Set(ui.selected ? [ui.selected] : []);
+}
+function syncHlMode() {
+  const on = hlChecked();
+  document.body.classList.toggle('hl-checked', on);
+  const b = $('#bHlMode');
+  b.textContent = on ? '☑' : '◉';
+  b.classList.toggle('on', on);
+  b.title = on ? 'Markera i bilderna: alla ikryssade rader (klicka för bara den markerade raden)'
+               : 'Markera i bilderna: den markerade raden (klicka för alla ikryssade rader)';
+  $('#bOnlySel').title = on ? 'Visa bara de bilder där någon ikryssad rad har markeringar'
+                            : 'Visa bara de bilder där den markerade raden har markeringar';
+}
+$('#bHlMode').onclick = () => { prefs.hlChecked = !prefs.hlChecked; savePrefs(); syncHlMode(); updateMarkSel(true); };
+function applyImgFilter() {       // "Bara bilder med markerad/ikryssade rader" + gemensamt taggfilter för bilder
+  const on = !!prefs.imgOnlySel, ids = on ? hlIds() : new Set();
+  const rs = state.rows.filter(x => ids.has(x.id)), r = rs.length ? rs : null;
+  const set = new Set(rs.flatMap(x => x.marks.map(m => m.img)));
+  // Taggfiltret visar bilder som själva har taggen ELLER som har markeringar för framfiltrerade rader.
+  const rowImgs = new Set();
+  if (ui.tags.size && view && view.direct) state.rows.forEach((x, i) => { if (view.direct[i]) for (const m of x.marks) rowImgs.add(m.img); });
   let changed = false;
   for (const c of $('#imgs').querySelectorAll('.imgcard')) {
     const n = c.dataset.img;
-    const h = (!!r && !set.has(n) && !isLocked(n)) || (ui.tags.size > 0 && !imgMatchesTags(n) && !isLocked(n));
+    const h = (!!r && !set.has(n) && !isLocked(n)) || (ui.tags.size > 0 && !imgMatchesTags(n) && !rowImgs.has(n) && !isLocked(n));
     if (c.hidden !== h) { c.hidden = h; changed = true; }
   }
   if (changed) layoutImages();
   const note = $('#imgNote');
   note.hidden = !on || (r && set.size > 0);
-  note.textContent = !r ? 'Markera en rad i listan för att se bilderna där den förekommer. (Alla bilder visas.)' : 'Den markerade raden har inga markeringar i bilderna.';
+  note.textContent = hlChecked()
+    ? (!r ? 'Kryssa i rader i listan för att se bilderna där de förekommer. (Alla bilder visas.)' : 'De ikryssade raderna har inga markeringar i bilderna.')
+    : (!r ? 'Markera en rad i listan för att se bilderna där den förekommer. (Alla bilder visas.)' : 'Den markerade raden har inga markeringar i bilderna.');
   $('#bOnlySel').classList.toggle('on', on);
 }
 function updateMarkSel(scroll, force) {
   applyImgFilter();
   const els = [];
+  const hl = hlIds();
   for (const el of document.querySelectorAll('#imgs .mark')) {
-    const on = el.dataset.id === ui.selected;
+    const on = hl.has(el.dataset.id);
     el.classList.toggle('sel', on);
     el.classList.toggle('cur', on && !!ui.selMark && +el.dataset.k === ui.selMark.k);
     if (on) els.push(el);
@@ -2327,7 +2420,7 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 (async function init() {
   try { Object.assign(prefs, JSON.parse(localStorage.getItem(LS_PREFS)) || {}); document.documentElement.style.setProperty('--list-zoom', prefs.listZoom || 1); } catch {}
   prefs.indent = prefs.indent || {};
-  $('#cbNum').checked = prefs.numbering;
+  $('#cbNum').checked = prefs.numbering; syncHlMode();
   let b = null;
   try { b = JSON.parse(localStorage.getItem(LS_BACKUP)); } catch {}
   if (b && b.state && b.state.fields && b.state.fields.length) {
