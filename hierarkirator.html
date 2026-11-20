@@ -44,9 +44,9 @@ input,select,textarea{font:inherit;color:var(--text);background:var(--panel);bor
 .chip i{font-style:normal;opacity:.65}
 .chip .x{font-weight:400;opacity:.5;margin-left:2px}
 .chip .x:hover{opacity:1}
-#tagfilter{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+#tagfilter{display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex:1 1 auto;min-width:0}
 main{flex:1;overflow:auto;position:relative}
-#wrap{position:relative;width:max-content;min-width:100%;padding-bottom:140px}
+#wrap{position:relative;width:max-content;min-width:100%;padding-bottom:140px;zoom:var(--list-zoom, 1)}
 #grid{border-collapse:separate;border-spacing:0;table-layout:fixed}
 #thead th{position:sticky;top:0;z-index:3;background:var(--panel);border-bottom:1px solid var(--border);text-align:left;font-weight:600;font-size:13px;
   padding:6px 8px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none}
@@ -57,7 +57,7 @@ main{flex:1;overflow:auto;position:relative}
 .rz{position:absolute;right:0;top:0;bottom:0;width:6px;cursor:col-resize}
 .rz:hover{background:var(--accent-soft)}
 #thead th{position:sticky}
-#tbody td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;background:var(--panel)}
+#tbody td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;background:var(--panel);overflow:hidden}
 #tbody tr:hover td{background:var(--hover)}
 #tbody tr.sel td{background:var(--sel)}
 #tbody tr.ctx input.cell{color:var(--ctx)}
@@ -99,10 +99,15 @@ kbd{font-family:inherit;border:1px solid var(--border);border-bottom-width:2px;b
 input.cell{border:none;border-radius:0;background:transparent;width:100%;padding:5px 6px;min-width:0;line-height:18px}
 input.cell:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--panel)}
 tr.lvl1 input.cell[data-first]{font-weight:600}
-td.tags{padding:2px 6px}
-td.tags .tagbox{display:flex;flex-wrap:wrap;gap:3px;align-items:center;min-height:26px}
-input.tagin{border:none;background:transparent;padding:2px 2px;width:70px;flex:1;min-width:50px;font-size:12px}
+td.tags{padding:2px 6px;max-width:0;overflow:hidden}
+td.tags .tagbox{display:flex;flex-wrap:nowrap;gap:3px;align-items:center;height:26px;width:100%;min-width:0;overflow:hidden}
+td.tags .tagbox .chip{flex:none}
+input.tagin{border:none;background:transparent;padding:2px 2px;width:54px;flex:1 0 54px;min-width:54px;font-size:12px}
 input.tagin:focus{outline:none}
+.tagpop{position:absolute;z-index:6;display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:5px 7px;
+  border:2px solid var(--accent);border-radius:6px;background:var(--panel);color:var(--text);
+  box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.tagpop input.tagin{flex:1 1 80px;min-width:70px}
 td.act{white-space:nowrap;text-align:right;padding-right:6px}
 td.act button{padding:0 6px;font-size:12px;opacity:0;border-color:transparent;background:transparent}
 tr:hover td.act button, tr.sel td.act button{opacity:.8}
@@ -146,7 +151,9 @@ button.ic{padding:3px 7px;min-width:30px}
 #imgNote{padding:12px 14px 0}
 #imgs{position:relative;margin:12px 14px;min-height:20px}
 #imgs.placing .imgbox{cursor:crosshair}
-.imgcard{position:absolute;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px}
+.imgcard{position:absolute;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px;transition:border-color .15s,box-shadow .15s}
+.imgcard.sel-img{border:2px solid var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+#imgScroll.bg-active{outline:2px solid var(--accent);outline-offset:-2px;background:color-mix(in srgb, var(--accent-soft) 35%, var(--bg))}
 .imghead{display:flex;align-items:center;gap:4px;margin-bottom:5px;height:22px;white-space:nowrap}
 .imghead b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:12px}
 .imghead .cnt-m{font-size:11px;flex:none}
@@ -158,7 +165,6 @@ button.ic{padding:3px 7px;min-width:30px}
 .itags{display:flex;flex-wrap:wrap;gap:3px;align-items:center;margin:-2px 0 5px;min-height:20px}
 .itags input.itagin{border:none;background:transparent;padding:1px 2px;width:60px;flex:1;min-width:50px;font-size:12px}
 .itags input.itagin:focus{outline:none}
-#imgTagFilter{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .imgcard.locked .imghead button.lockb{opacity:1;background:var(--accent);color:#fff;border-color:var(--accent)}
 .imgbox.dropok{outline:3px dashed var(--accent);outline-offset:2px}
 .mlayer{position:absolute;inset:0}
@@ -189,8 +195,11 @@ button.ic{padding:3px 7px;min-width:30px}
     <button id="bFields" class="ic" title="Fält…">☰</button>
     <button id="bExport" class="ic" title="Exportera listan…">⤓</button>
     <button id="bKeys" class="ic" title="Visa kortkommandon (?)">⌨</button>
+    <span class="sep"></span>
+    <span class="lbl" title="Filtrera rader och bilder på taggar">🏷</span><span id="tagfilter"></span>
     <div class="status" id="status"><span class="dot"></span><span id="statusText"></span><button id="bPerm" hidden>Ge skrivbehörighet</button></div>
   </div>
+
 </header>
 <div id="panes">
 <div id="left">
@@ -207,8 +216,6 @@ button.ic{padding:3px 7px;min-width:30px}
     <button id="bClearSel" class="ic" title="Avmarkera alla valda rader">☐</button>
     <span class="sep"></span>
     <label class="lbl" title="Visa numrering (1.2.3)"><input type="checkbox" id="cbNum"> 1.2</label>
-    <span class="sep"></span>
-    <span class="lbl" title="Filtrera på taggar">🏷</span><span id="tagfilter"></span>
   </div>
 <main id="main">
   <div id="wrap">
@@ -227,11 +234,10 @@ button.ic{padding:3px 7px;min-width:30px}
     <button id="bOnlySel" class="ic" title="Visa bara de bilder där den markerade raden har markeringar">🎯</button>
     <span class="sep"></span>
     <button id="bFit" class="ic" title="Anpassa: skala bilderna (upp eller ner) så att de fyller bildytans bredd">⤢</button>
-    <button id="bZoom" title="Zoom – Ctrl + scrollhjul zoomar alla bilder. Klicka för 100 % (bildernas verkliga storlek).">100 %</button>
+    <button id="bZoom" title="Zoom – Klicka på en bild för att aktivera zoom för den bilden, eller klicka på bakgrunden i bildytan för att aktivera zoom för alla bilder med Ctrl + scrollhjul. Klicka här för 100 %.">100 %</button>
     <span class="sep"></span>
     <button id="bExpImg" class="ic" title="Exportera bilder: ladda ner bilderna med siffermarkeringarna (ZIP) inklusive teckenförklaring">⤓</button>
     <span class="lbl" id="imgInfo"></span>
-    <span id="imgTagFilter"></span>
   </div>
   <div id="imgScroll">
     <div id="imgNote" class="lbl" hidden></div>
@@ -303,8 +309,8 @@ button.ic{padding:3px 7px;min-width:30px}
       <tr><td>Högerklick / <kbd>Delete</kbd></td><td>Ta bort markeringen</td></tr>
       <tr><td>Klicka siffran i listan</td><td>Visa radens markeringar</td></tr>
       <tr><td>Släpp bildfiler i bildytan</td><td>Lägg till bilder</td></tr>
-      <tr><td><b>+ tagg</b> under bildnamnet</td><td>Tagga bilden (<kbd>Enter</kbd> lägger till, <kbd>Backspace</kbd> tar bort sista). Klicka på en tagg i bildytans verktygsrad för att bara visa bilder med den taggen</td></tr>
-      <tr><td><kbd>Ctrl</kbd> + scrollhjul</td><td>Zooma in/ut alla bilder (2–400 %). <b>⤢</b> (Anpassa) = bilderna fyller bredden igen (standard), procentknappen = 100 %</td></tr>
+      <tr><td><b>+ tagg</b> under bildnamnet</td><td>Tagga bilden (<kbd>Enter</kbd> lägger till, <kbd>Backspace</kbd> tar bort sista). Klicka på en tagg i den övre taggraden för att filtrera både rader och bilder</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + scrollhjul på bilder</td><td>Klicka på en bild för att aktivera den och zooma enbart den, eller klicka på bakgrunden för att aktivera och zooma alla bilder (2–400 %). <b>⤢</b> = anpassa bredd, procentknappen = 100 %</td></tr>
       <tr><td><b>⤓</b> i bildytan / <b>⤓</b> på en bild</td><td>Ladda ner bilderna med siffermarkeringar (ZIP med teckenförklaring)</td></tr>
     </table></section>
   </div>
@@ -364,8 +370,12 @@ let version = 0, savedVersion = 0, saving = false, lastSaved = null, saveError =
 let undoStack = [], redoStack = [], editSnap = null;
 let view = null, drag = null;
 const ui = { tags: new Set(), tagMode: 'any', withChildren: false, search: '', selected: null, onlyChecked: false, lastCk: null };
-let prefs = { numbering: true, widths: {}, tagWidth: 220, indent: {} };
+let prefs = { numbering: true, widths: {}, tagWidth: 220, tagPos: null, indent: {}, listZoom: 1 };
 const isIndented = f => !!(prefs.indent && prefs.indent[f.name]);
+function tagIndex() {
+  const max = state.fields.length;
+  return prefs.tagPos == null ? max : clamp(prefs.tagPos, 0, max);
+}
 
 function mkRow(level, values = {}, tags = [], marks = []) { return { id: newId('r'), level, values, tags, marks, collapsed: false }; }
 function defaultState() {
@@ -416,9 +426,15 @@ function parseCSV(text, d = ';') {
 }
 const csvCell = v => { v = String(v ?? ''); return /[;"\r\n]|^\s|\s$/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
 function toCSV(list = state.rows) {
-  const mk = !!state.markName;
-  const lines = [[state.levelName, ...state.fields.map(f => f.name), state.tagName, ...(mk ? [state.markName] : [])]];
-  for (const r of list) lines.push([r.level, ...state.fields.map(f => r.values[f.id] ?? ''), r.tags.join(', '), ...(mk ? [marksToStr(r.marks)] : [])]);
+  const mk = !!state.markName, ti = tagIndex();
+  const hFields = state.fields.map(f => f.name);
+  hFields.splice(ti, 0, state.tagName);
+  const lines = [[state.levelName, ...hFields, ...(mk ? [state.markName] : [])]];
+  for (const r of list) {
+    const rowVals = state.fields.map(f => r.values[f.id] ?? '');
+    rowVals.splice(ti, 0, r.tags.join(', '));
+    lines.push([r.level, ...rowVals, ...(mk ? [marksToStr(r.marks)] : [])]);
+  }
   return '﻿' + lines.map(l => l.map(csvCell).join(';')).join('\r\n') + '\r\n';
 }
 const MARK_ALIASES = ['bildmarkeringar', 'markeringar', 'bildmarkering', 'marks', 'markers'];
@@ -452,13 +468,14 @@ function stateFromCSV(text) {
     fields.push({ id: newId('f'), name, col: i });
   });
   if (!fields.length) fields.push({ id: newId('f'), name: 'Namn', col: -1 });
+  const detectedTagPos = ti >= 0 ? fields.filter(f => f.col >= 0 && f.col < ti).length : null;
   const rows = data.slice(1).map(r => {
     const values = {};
     for (const f of fields) values[f.id] = f.col >= 0 ? (r[f.col] ?? '') : '';
     return mkRow(li >= 0 ? parseInt(r[li]) || 1 : 1, values, ti >= 0 ? splitTags(r[ti]) : [], mi >= 0 ? parseMarks(r[mi]) : []);
   });
   fields.forEach(f => delete f.col);
-  return { fields, rows, levelName: li >= 0 ? header[li] : 'Nivå', tagName: ti >= 0 ? header[ti] : 'Taggar', markName: mi >= 0 ? header[mi] : null };
+  return { fields, rows, levelName: li >= 0 ? header[li] : 'Nivå', tagName: ti >= 0 ? header[ti] : 'Taggar', markName: mi >= 0 ? header[mi] : null, detectedTagPos };
 }
 async function decodeFile(file) {
   const buf = await file.arrayBuffer();
@@ -520,18 +537,23 @@ function chip(t, removable) {
 function render(focus) {
   const keep = focus || captureFocus();
   closeExpander();
+  closeTagPop();
   view = computeView(false);
   renderHead(); renderBody(); renderLevels(); renderTagFilter(); renderSelBar(); renderImages(); updateStatus(); updateUndoBtns();
   restoreFocus(keep);
 }
 function renderHead() {
-  const F = state.fields;
-  const widths = [100, ...F.map(fieldWidth), prefs.tagWidth || 220, 96];
+  const F = state.fields, ti = tagIndex();
+  const colWidths = F.map(fieldWidth);
+  colWidths.splice(ti, 0, prefs.tagWidth || 220);
+  const widths = [100, ...colWidths, 96];
   $('#cols').innerHTML = widths.map(w => `<col style="width:${w}px">`).join('');
   $('#grid').style.width = widths.reduce((a, b) => a + b, 0) + 'px';
-  thead.innerHTML = `<tr><th style="padding-left:34px"><input type="checkbox" class="ck" id="ckAll" title="Välj / avmarkera alla synliga rader">${prefs.numbering ? '#' : ''}</th>${F.map(f =>
-    `<th class="fh" draggable="true" data-f="${f.id}" title="Dra för att byta ordning · dubbelklicka för fältinställningar">${esc(f.name)}<span class="rz" data-rz="${f.id}"></span></th>`).join('')
-    }<th>${esc(state.tagName)}<span class="rz" data-rz="__tags"></span></th><th style="text-align:right"><button id="bAddField" title="Lägg till fält" style="padding:0 7px">＋ Fält</button></th></tr>`;
+  const ths = F.map(f =>
+    `<th class="fh" draggable="true" data-f="${f.id}" title="Dra för att byta ordning · dubbelklicka för fältinställningar">${esc(f.name)}<span class="rz" data-rz="${f.id}"></span></th>`);
+  ths.splice(ti, 0, `<th class="fh" draggable="true" data-f="__tags" title="Dra för att byta ordning · dubbelklicka för fältinställningar">${esc(state.tagName)}<span class="rz" data-rz="__tags"></span></th>`);
+  thead.innerHTML = `<tr><th style="padding-left:34px"><input type="checkbox" class="ck" id="ckAll" title="Välj / avmarkera alla synliga rader">${prefs.numbering ? '#' : ''}</th>${ths.join('')
+    }<th style="text-align:right"><button id="bAddField" title="Lägg till fält" style="padding:0 7px">＋ Fält</button></th></tr>`;
 }
 function renderBody() {
   const R = state.rows, F = state.fields, out = [];
@@ -541,17 +563,17 @@ function renderBody() {
     const tg = kids ? `<button class="tg" tabindex="-1" title="${r.collapsed ? 'Visa' : 'Dölj'} underrader">${r.collapsed ? '▸' : '▾'}</button>` : `<button class="tg leaf" tabindex="-1">●</button>`;
     const mkb = view.markNo[i] ? `<span class="mk" title="${r.marks.length} markering${r.marks.length > 1 ? 'ar' : ''} i bilderna – klicka för att visa">${view.markNo[i]}</span>` : '';
     const cnt = kids && r.collapsed ? `<span class="cnt" title="Dolda underrader">${subEnd(i) - i - 1}</span>` : '';
-    const cells = F.map((f, k) => {
+    const cellList = F.map((f, k) => {
       const inp = `<input class="cell" data-f="${f.id}"${k === 0 ? ' data-first' : ''} value="${esc(r.values[f.id] || '')}">`;
       return k === 0
         ? `<td><div class="tw"><span class="dh" draggable="true" title="Dra för att flytta (med underrader) – i sidled för att byta nivå" style="padding-left:${ind}px;background-size:${ind}px 100%">${tg}</span>${inp}${mkb}${cnt}</div></td>`
         : isIndented(f) ? `<td><div class="ti" style="padding-left:${ind}px;background-size:${ind}px 100%">${inp}</div></td>`
         : `<td>${inp}</td>`;
-    }).join('');
+    });
+    cellList.splice(tagIndex(), 0, `<td class="tags"><div class="tagbox">${r.tags.map(t => chip(t, true)).join('')}<input class="tagin" placeholder="+ tagg" list="taglist"></div></td>`);
     out.push(`<tr data-id="${r.id}" class="lvl${r.level}${ctx ? ' ctx' : ''}${ui.selected === r.id ? ' sel' : ''}${r.checked ? ' checked' : ''}">` +
       `<td class="hd"><div class="hdw"><span class="grip" draggable="true" title="Dra för att flytta (med underrader)">⋮⋮</span><input type="checkbox" class="ck" tabindex="-1" title="Välj raden (Shift-klick väljer ett intervall)"${r.checked ? ' checked' : ''}><span class="num">${prefs.numbering ? view.num[i] : ''}</span></div></td>` +
-      cells +
-      `<td class="tags"><div class="tagbox">${r.tags.map(t => chip(t, true)).join('')}<input class="tagin" placeholder="+ tagg" list="taglist"></div></td>` +
+      cellList.join('') +
       `<td class="act"><button data-a="sib" title="Ny rad på samma nivå (Enter)">＋</button><button data-a="child" title="Ny underrad (Ctrl+Enter)">↳</button><button data-a="del" title="Ta bort rad">✕</button></td></tr>`);
   }
   tbody.innerHTML = out.join('');
@@ -581,9 +603,12 @@ function setChecked(rows, on) { for (const r of rows) r.checked = on; backupLoca
 function renderTagFilter() {
   const counts = new Map();
   for (const r of state.rows) for (const t of r.tags) counts.set(t, (counts.get(t) || 0) + 1);
+  for (const n of imageNames()) for (const t of imgTags(n)) counts.set(t, (counts.get(t) || 0) + 1);
   for (const t of [...ui.tags]) if (!counts.has(t)) ui.tags.delete(t);
   const tags = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'sv'));
-  $('#taglist').innerHTML = tags.map(t => `<option value="${esc(t)}">`).join('');
+  const opts = tags.map(t => `<option value="${esc(t)}">`).join('');
+  $('#taglist').innerHTML = opts;
+  $('#imgtaglist').innerHTML = opts;
   if (!tags.length) { $('#tagfilter').innerHTML = '<span class="lbl">(inga ännu)</span>'; return; }
   $('#tagfilter').innerHTML = tags.map(t => `<span class="chip${ui.tags.has(t) ? ' on' : ''}" data-ftag="${esc(t)}" style="--h:${hue(t)}">${esc(t)} <i>${counts.get(t)}</i></span>`).join('') +
     (ui.tags.size > 1 ? `<button id="bTagMode" title="Hur flera valda taggar kombineras">${ui.tagMode === 'all' ? 'Alla valda' : 'Någon vald'}</button>` : '') +
@@ -727,10 +752,78 @@ function closeExpander() {
   const x = xp; xp = null;
   x.ta.remove(); x.inp.scrollLeft = 0;
 }
+let tagPop = null;
+function openTagPop(td) {
+  closeTagPop();
+  closeExpander();
+  const tr = td.closest('tr'), id = tr.dataset.id, r = state.rows[idxOf(id)];
+  if (!r) return;
+  const rc = td.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+  const pop = document.createElement('div');
+  pop.className = 'tagpop';
+  pop.dataset.id = id;
+  pop.style.left = (rc.left - wr.left) + 'px';
+  pop.style.top = (rc.top - wr.top) + 'px';
+  pop.style.minWidth = Math.max(rc.width, 240) + 'px';
+  pop.style.maxWidth = Math.max(rc.width, 420) + 'px';
+  pop.innerHTML = r.tags.map(t => chip(t, true)).join('') + `<input class="tagin" placeholder="+ tagg" list="taglist">`;
+  wrap.appendChild(pop);
+  tagPop = { el: pop, td, id };
+}
+function closeTagPop() {
+  if (!tagPop) return;
+  const p = tagPop; tagPop = null;
+  p.el.remove();
+}
+wrap.addEventListener('click', e => {
+  if (!tagPop || !tagPop.el.contains(e.target)) return;
+  const id = tagPop.id, r = state.rows[idxOf(id)];
+  if (!r) return closeTagPop();
+  if (e.target.classList.contains('x')) {
+    const tag = e.target.parentElement.dataset.tag;
+    mutate(() => r.tags = r.tags.filter(x => x !== tag));
+    const td = tbody.querySelector(`tr[data-id="${id}"] td.tags`);
+    if (td) openTagPop(td);
+    return;
+  }
+  const c = e.target.closest('.chip');
+  if (c) { toggleTagFilter(c.dataset.tag); return; }
+  if (!e.target.matches('input.tagin')) tagPop.el.querySelector('.tagin').focus();
+});
+wrap.addEventListener('keydown', e => {
+  if (!tagPop || !tagPop.el.contains(e.target) || !e.target.matches('input.tagin')) return;
+  const id = tagPop.id, r = state.rows[idxOf(id)];
+  if (!r) return closeTagPop();
+  const t = e.target;
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const v = t.value; t.value = '';
+    if (v.trim()) {
+      addTags(r, v);
+      const td = tbody.querySelector(`tr[data-id="${id}"] td.tags`);
+      if (td) { openTagPop(td); tagPop.el.querySelector('.tagin').focus(); }
+    } else if (e.key === 'Enter') { closeTagPop(); selectRow(id); }
+  } else if (e.key === 'Escape') {
+    e.preventDefault(); closeTagPop(); selectRow(id);
+  } else if (e.key === 'Backspace' && !t.value && r.tags.length) {
+    mutate(() => r.tags.pop());
+    const td = tbody.querySelector(`tr[data-id="${id}"] td.tags`);
+    if (td) { openTagPop(td); tagPop.el.querySelector('.tagin').focus(); }
+  }
+});
+wrap.addEventListener('focusout', e => {
+  if (!tagPop || !tagPop.el.contains(e.target)) return;
+  const id = tagPop.id, r = state.rows[idxOf(id)];
+  if (e.target.matches('input.tagin') && e.target.value.trim() && r) {
+    const v = e.target.value; e.target.value = '';
+    setTimeout(() => addTags(r, v));
+  }
+  setTimeout(() => { if (tagPop && !tagPop.el.contains(document.activeElement)) closeTagPop(); }, 0);
+});
 function maybeExpand(inp) { if (document.activeElement === inp && overflows(inp)) openExpander(inp); }
 tbody.addEventListener('mousedown', () => { pointerDown = true; });
 document.addEventListener('mouseup', () => setTimeout(() => { pointerDown = false; }));
-main.addEventListener('scroll', () => { if (xp && document.activeElement !== xp.ta) closeExpander(); });
+main.addEventListener('scroll', () => { if (xp && document.activeElement !== xp.ta) closeExpander(); if (tagPop && !tagPop.el.contains(document.activeElement)) closeTagPop(); });
 window.addEventListener('resize', () => { if (xp) { const r = xp.inp.getBoundingClientRect(), wr = wrap.getBoundingClientRect(); xp.ta.style.left = (r.left - wr.left) + 'px'; xp.ta.style.top = (r.top - wr.top) + 'px'; } });
 
 /* ---------------- tbody events ---------------- */
@@ -776,7 +869,8 @@ tbody.addEventListener('click', e => {
   if (t.classList.contains('x')) { const tag = t.parentElement.dataset.tag; mutate(() => r.tags = r.tags.filter(x => x !== tag)); return; }
   const c = t.closest('.chip');
   if (c) { toggleTagFilter(c.dataset.tag); return; }
-  if (t.closest('td.tags')) tr.querySelector('.tagin').focus();
+  const tagTd = t.closest('td.tags');
+  if (tagTd && !t.matches('input.tagin')) { selectRow(r.id); openTagPop(tagTd); return; }
   selectRow(r.id);
 });
 tbody.addEventListener('keydown', e => {
@@ -837,6 +931,7 @@ document.addEventListener('keydown', e => {
   e.preventDefault();
 });
 document.addEventListener('mousedown', e => {   // klick utanför listan avmarkerar
+  if (tagPop && !tagPop.el.contains(e.target) && !tagPop.td.contains(e.target)) closeTagPop();
   if (ui.selected && main.contains(e.target) && !tbody.contains(e.target)) selectRow(null);
 });
 
@@ -860,7 +955,7 @@ $('#newChip').addEventListener('click', () => {
   addRowAt(i, i >= 0 ? 'sib' : 'end');
 });
 function treeLeft() {   // vänsterkant för trädkolumnens innehåll, relativt #wrap
-  const th = thead.querySelector('th.fh');
+  const th = thead.querySelector(`th.fh[data-f="${state.fields[0].id}"]`) || thead.querySelector('th.fh');
   return th.getBoundingClientRect().left - wrap.getBoundingClientRect().left;
 }
 function computeTarget(e) {
@@ -976,10 +1071,21 @@ $('#bShowSel').onclick = () => { ui.onlyChecked = true; render(); };
 $('#bClearSel').onclick = () => setChecked(state.rows, false);
 function moveField(fromId, toId, after) {
   if (fromId === toId) return;
+  const items = state.fields.map(f => f.id);
+  items.splice(tagIndex(), 0, '__tags');
+  const fi = items.indexOf(fromId);
+  if (fi < 0) return;
+  items.splice(fi, 1);
+  let ti = items.indexOf(toId);
+  if (ti < 0) return;
+  if (after) ti++;
+  items.splice(ti, 0, fromId);
+  const newTagPos = items.indexOf('__tags');
+  const newOrder = items.filter(id => id !== '__tags');
   mutate(() => {
-    const F = state.fields, f = F.splice(F.findIndex(x => x.id === fromId), 1)[0];
-    let k = F.findIndex(x => x.id === toId); if (after) k++;
-    F.splice(k, 0, f);
+    prefs.tagPos = newTagPos;
+    savePrefs();
+    state.fields = newOrder.map(id => state.fields.find(f => f.id === id));
   });
   if ($('#dlgFields').open) renderFieldList();
 }
@@ -987,9 +1093,10 @@ document.addEventListener('mousedown', e => {
   const rz = e.target.closest && e.target.closest('.rz'); if (!rz) return;
   e.preventDefault(); e.stopPropagation();
   const key = rz.dataset.rz, f = state.fields.find(x => x.id === key);
-  const k = f ? state.fields.indexOf(f) : -1;
+  const k = f ? state.fields.indexOf(f) : -1, ti = tagIndex();
   const w0 = f ? fieldWidth(f, k) : (prefs.tagWidth || 220), x0 = e.clientX;
-  const col = $('#cols').children[f ? k + 1 : state.fields.length + 1];
+  const colIdx = f ? (k < ti ? k + 1 : k + 2) : (ti + 1);
+  const col = $('#cols').children[colIdx];
   const mv = ev => {
     const w = Math.max(60, w0 + ev.clientX - x0);
     col.style.width = w + 'px';
@@ -1028,6 +1135,7 @@ const FS = 'showOpenFilePicker' in window;
 const pickerTypes = [{ description: 'CSV (semikolonseparerad)', accept: { 'text/csv': ['.csv'] } }];
 function loadState(s, name, noImages) {
   state = s; normalize();
+  if ('detectedTagPos' in s) { prefs.tagPos = s.detectedTagPos; delete s.detectedTagPos; savePrefs(); }
   fileName = name; undoStack = []; redoStack = []; version = savedVersion = 0; saveError = null;
   ui.tags.clear(); ui.search = ''; ui.selected = null; ui.selMark = null; $('#search').value = '';
   backupLocal(); render();
@@ -1153,11 +1261,15 @@ async function loadHandle() {
 /* ---------------- fields dialog ---------------- */
 function openFields() { renderFieldList(); $('#levelName').value = state.levelName; $('#tagName').value = state.tagName; $('#dlgFields').showModal(); }
 function renderFieldList() {
-  $('#fieldList').innerHTML = state.fields.map((f, k) => `<li draggable="true" data-f="${f.id}"><span class="grip">⋮⋮</span>
-    <input class="fname" value="${esc(f.name)}">
-    <label class="lbl" title="${k === 0 ? 'Första fältet visas alltid som hierarki' : 'Visa fältet med indrag efter nivå, som första fältet'}"><input type="checkbox" class="find"${k === 0 || isIndented(f) ? ' checked' : ''}${k === 0 ? ' disabled' : ''}> Indrag</label>
-    <button data-m="up" ${k === 0 ? 'disabled' : ''}>↑</button><button data-m="down" ${k === state.fields.length - 1 ? 'disabled' : ''}>↓</button>
-    <button data-m="del" title="Ta bort fältet" ${state.fields.length < 2 ? 'disabled' : ''}>✕</button></li>`).join('');
+  const rows = state.fields.map((f, k) => ({ id: f.id, name: f.name, isTag: false, firstField: k === 0, indented: k === 0 || isIndented(f) }));
+  rows.splice(tagIndex(), 0, { id: '__tags', name: state.tagName, isTag: true, firstField: false, indented: false });
+  $('#fieldList').innerHTML = rows.map((it, idx) => `<li draggable="true" data-f="${it.id}"><span class="grip">⋮⋮</span>
+    <input class="fname" value="${esc(it.name)}">
+    ${it.isTag
+      ? `<span class="lbl" style="padding:0 6px" title="Taggkolumnen">🏷 Taggar</span>`
+      : `<label class="lbl" title="${it.firstField ? 'Första datafältet visas alltid som hierarki' : 'Visa fältet med indrag efter nivå'}"><input type="checkbox" class="find"${it.indented ? ' checked' : ''}${it.firstField ? ' disabled' : ''}> Indrag</label>`}
+    <button data-m="up" ${idx === 0 ? 'disabled' : ''}>↑</button><button data-m="down" ${idx === rows.length - 1 ? 'disabled' : ''}>↓</button>
+    <button data-m="del" title="${it.isTag ? 'Taggkolumnen kan inte tas bort' : 'Ta bort fältet'}" ${it.isTag || state.fields.length < 2 ? 'disabled' : ''}>✕</button></li>`).join('');
 }
 function nameTaken(name, exceptId) {
   const n = name.trim().toLowerCase();
@@ -1178,7 +1290,15 @@ $('#fieldList').addEventListener('change', e => {
     prefs.indent[f.name] = e.target.checked; savePrefs(); render(); return;
   }
   if (!e.target.classList.contains('fname')) return;
-  const id = e.target.closest('li').dataset.f, f = state.fields.find(x => x.id === id), name = e.target.value.trim();
+  const id = e.target.closest('li').dataset.f, name = e.target.value.trim();
+  if (id === '__tags') {
+    const clash = state.fields.some(f => f.name.toLowerCase() === name.toLowerCase()) || name.toLowerCase() === state.levelName.toLowerCase();
+    if (!name || clash) { toast('Ogiltigt eller upptaget namn'); e.target.value = state.tagName; return; }
+    $('#tagName').value = name;
+    mutate(() => state.tagName = name);
+    return;
+  }
+  const f = state.fields.find(x => x.id === id);
   if (!name || nameTaken(name, id)) { toast('Ogiltigt eller upptaget namn'); e.target.value = f.name; return; }
   if (prefs.widths[f.name]) prefs.widths[name] = prefs.widths[f.name];
   if (prefs.indent[f.name]) prefs.indent[name] = true;
@@ -1188,13 +1308,20 @@ $('#fieldList').addEventListener('change', e => {
 $('#fieldList').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
 $('#fieldList').addEventListener('click', e => {
   const b = e.target.closest('[data-m]'); if (!b) return;
-  const id = b.closest('li').dataset.f, F = state.fields, k = F.findIndex(f => f.id === id);
-  if (b.dataset.m === 'up') moveField(id, F[k - 1].id, false);
-  else if (b.dataset.m === 'down') moveField(id, F[k + 1].id, true);
-  else {
+  const id = b.closest('li').dataset.f;
+  const items = state.fields.map(f => f.id);
+  items.splice(tagIndex(), 0, '__tags');
+  const pos = items.indexOf(id);
+  if (b.dataset.m === 'up' && pos > 0) moveField(id, items[pos - 1], false);
+  else if (b.dataset.m === 'down' && pos < items.length - 1) moveField(id, items[pos + 1], true);
+  else if (id !== '__tags') {
+    const F = state.fields, k = F.findIndex(f => f.id === id);
     const used = state.rows.filter(r => r.values[id]).length;
     if (used && !confirm(`Fältet ”${F[k].name}” har innehåll i ${used} rader. Ta bort fältet och dess innehåll?`)) return;
-    mutate(() => { F.splice(k, 1); state.rows.forEach(r => delete r.values[id]); });
+    mutate(() => {
+      if (k < tagIndex() && prefs.tagPos != null) { prefs.tagPos = Math.max(0, prefs.tagPos - 1); savePrefs(); }
+      F.splice(k, 1); state.rows.forEach(r => delete r.values[id]);
+    });
     renderFieldList();
   }
 });
@@ -1220,6 +1347,7 @@ for (const [id, key] of [['#levelName', 'levelName'], ['#tagName', 'tagName']]) 
     const clash = state.fields.some(f => f.name.toLowerCase() === v.toLowerCase()) || v.toLowerCase() === (key === 'levelName' ? state.tagName : state.levelName).toLowerCase();
     if (!v || clash) { toast('Ogiltigt eller upptaget namn'); e.target.value = state[key]; return; }
     mutate(() => state[key] = v);
+    if (key === 'tagName' && $('#dlgFields').open) renderFieldList();
   });
 }
 $('#bFields').onclick = openFields;
@@ -1520,7 +1648,28 @@ async function refreshDirImages() {
   }
 }
 window.addEventListener('focus', refreshDirImages);
-let placing = false, pickFor = null, imgSig = '', imgLoadTok = 0;
+let placing = false, pickFor = null, imgSig = '', imgLoadTok = 0, selectedImg = null, imgBgActive = false;
+function setImgZoomTarget(target) {
+  // target: 'bg' for background (all images), image name string for a single image, or null for inactive
+  if (target === 'bg') {
+    selectedImg = null;
+    imgBgActive = true;
+  } else if (target) {
+    selectedImg = target;
+    imgBgActive = false;
+  } else {
+    selectedImg = null;
+    imgBgActive = false;
+  }
+  for (const c of $('#imgs').querySelectorAll('.imgcard')) {
+    c.classList.toggle('sel-img', c.dataset.img === selectedImg);
+  }
+  $('#imgScroll').classList.toggle('bg-active', imgBgActive);
+  syncZoomUI();
+}
+function selectImg(name) {
+  setImgZoomTarget(name || null);
+}
 const imgKey = () => 'imgs:' + (fileName || '');
 const blobKey = name => 'img:' + (fileName || '') + '\u0000' + name;
 function idbReq(mode, fn) {
@@ -1619,7 +1768,7 @@ function renderImages() {
           `<button data-im="exp" title="Ladda ner bilden med markeringar">⤓</button><button data-im="del" title="Ta bort bilden">✕</button>`
         : `<button data-im="dir" title="Välj mappen där bilden ligger">📁</button><button data-im="pick">Välj fil…</button><button data-im="del" title="Ta bort markeringarna">✕</button>`;
       const lk = `<button data-im="lock" class="lockb" title="Lås bilden: visas alltid, även när 🎯 (bara bilder med markerad rad) är på">${isLocked(n) ? '🔒' : '🔓'}</button>`;
-      return `<div class="imgcard${isLocked(n) ? ' locked' : ''}" data-img="${esc(n)}">` +
+      return `<div class="imgcard${isLocked(n) ? ' locked' : ''}${selectedImg === n ? ' sel-img' : ''}" data-img="${esc(n)}">` +
         `<div class="imghead"><b title="${esc(n)}">${esc(n)}</b>${lk}${btns}</div><div class="itags"></div>` +
         (im ? `<div class="imgbox"><img src="${im.url}" draggable="false" alt=""><div class="mlayer"></div></div>`
             : `<div class="missing">Bilden ”${esc(n)}” hittades inte${imgDir ? ` i mappen ”${esc(imgDir.name)}”` : ''}. ` +
@@ -1649,7 +1798,18 @@ function fitLevel() {
   if (!ws.length) return null;
   return clamp(($('#imgScroll').clientWidth - 28 - 14 - 4) / Math.max(...ws), ZMIN, ZMAX);
 }
-const zoomLevel = () => (fitOn() && fitLevel()) || prefs.imgZoomN || 0.25;
+const baseZoomLevel = () => (fitOn() && fitLevel()) || prefs.imgZoomN || 0.25;
+function imgZoomOf(name) {
+  if (prefs.imgCustomZoom && prefs.imgCustomZoom[name] != null) return prefs.imgCustomZoom[name];
+  const card = $('#imgs') && $('#imgs').querySelector(`.imgcard[data-img="${CSS.escape(name)}"]`);
+  const img = card && card.querySelector('img');
+  if (img && img.naturalWidth) {
+    const rectW = img.getBoundingClientRect().width;
+    if (rectW > 0) return rectW / img.naturalWidth;
+  }
+  return baseZoomLevel();
+}
+const zoomLevel = () => selectedImg ? imgZoomOf(selectedImg) : baseZoomLevel();
 const isLocked = n => !!(prefs.imgLock && prefs.imgLock[n]);    // låst bild visas alltid
 const fmtPct = z => (z < 0.1 ? (z * 100).toFixed(1).replace('.', ',') : Math.round(z * 100)) + ' %';
 function skyPlace(sky, w, W) {
@@ -1675,11 +1835,23 @@ function skyAdd(sky, x, w, y) {
   sky.length = 0;
   for (const s of out) { const l = sky[sky.length - 1]; if (l && l.y === s.y && l.x + l.w === s.x) l.w += s.w; else sky.push({ ...s }); }
 }
-function sizeCard(c, z = zoomLevel()) {     // sätter bildens och kortets storlek, returnerar kortets bredd
+function sizeCard(c, z = baseZoomLevel()) {     // sätter bildens och kortets storlek, returnerar kortets bredd
   const img = c.querySelector('img'), b = c.querySelector('.imgbox');
+  const name = c.dataset.img;
+  const customZ = prefs.imgCustomZoom && prefs.imgCustomZoom[name];
+  const W = Math.max(120, $('#imgScroll').clientWidth - 28);
+  if (fitOn() && customZ == null) {
+    const nw = img && img.naturalWidth ? img.naturalWidth : 400;
+    const nh = img && img.naturalHeight ? img.naturalHeight : 300;
+    const iw = Math.max(4, W - 14);
+    const ih = Math.max(3, Math.round(iw * (nh / nw)));
+    if (b) { b.style.width = iw + 'px'; b.style.height = ih + 'px'; }
+    c.style.width = W + 'px';
+    return W;
+  }
   let iw = 240;
   if (img) {
-    const nw = img.naturalWidth || 400, nh = img.naturalHeight || 300, zz = z;
+    const nw = img.naturalWidth || 400, nh = img.naturalHeight || 300, zz = customZ != null ? customZ : z;
     iw = Math.max(4, Math.round(nw * zz));
     b.style.width = iw + 'px'; b.style.height = Math.max(3, Math.round(nh * zz)) + 'px';
   }
@@ -1688,7 +1860,7 @@ function sizeCard(c, z = zoomLevel()) {     // sätter bildens och kortets storl
   return cw;
 }
 function layoutImages() {
-  const box = $('#imgs'), W = Math.max(120, $('#imgScroll').clientWidth - 28), z = zoomLevel();
+  const box = $('#imgs'), W = Math.max(120, $('#imgScroll').clientWidth - 28), z = baseZoomLevel();
   const sky = [{ x: 0, w: W + IGAP, y: 0 }];
   let maxB = 0, maxR = 0;
   for (const c of box.querySelectorAll('.imgcard')) {
@@ -1706,11 +1878,49 @@ function scheduleLayout() { if (!layoutRaf) layoutRaf = requestAnimationFrame(()
 new ResizeObserver(scheduleLayout).observe($('#imgScroll'));
 function syncZoomUI() {
   const z = zoomLevel();
-  $('#bZoom').textContent = fmtPct(z);
-  $('#bFit').classList.toggle('on', fitOn());
+  const prefix = selectedImg ? '🖼 ' : (imgBgActive ? '🗔 ' : '');
+  $('#bZoom').textContent = prefix + fmtPct(z);
+  $('#bZoom').classList.toggle('on', !!(selectedImg || imgBgActive));
+  $('#bFit').classList.toggle('on', fitOn() && !(prefs.imgCustomZoom && Object.keys(prefs.imgCustomZoom).length));
 }
-function setZoom(z) { prefs.imgFit = false; prefs.imgZoomN = clamp(z, ZMIN, ZMAX); syncZoomUI(); layoutImages(); savePrefsSoon(); }
-function fitZoom() { prefs.imgFit = true; syncZoomUI(); layoutImages(); $('#imgScroll').scrollLeft = 0; savePrefsSoon(); }
+function scaleAllZooms(factor) {
+  prefs.imgFit = false;
+  prefs.imgCustomZoom = prefs.imgCustomZoom || {};
+  const names = new Set([
+    ...imageNames(),
+    ...Object.keys(prefs.imgCustomZoom)
+  ]);
+  for (const name of names) {
+    const cur = prefs.imgCustomZoom[name] != null ? prefs.imgCustomZoom[name] : imgZoomOf(name);
+    prefs.imgCustomZoom[name] = clamp(cur * factor, ZMIN, ZMAX);
+  }
+  if (prefs.imgZoomN != null) {
+    prefs.imgZoomN = clamp(prefs.imgZoomN * factor, ZMIN, ZMAX);
+  }
+}
+function setZoom(z, targetName = selectedImg) {
+  const clamped = clamp(z, ZMIN, ZMAX);
+  if (targetName) {
+    prefs.imgCustomZoom = prefs.imgCustomZoom || {};
+    prefs.imgCustomZoom[targetName] = clamped;
+  } else {
+    const curBase = baseZoomLevel();
+    const factor = curBase > 0 ? (clamped / curBase) : 1;
+    scaleAllZooms(factor);
+    prefs.imgZoomN = clamped;
+  }
+  syncZoomUI(); layoutImages(); savePrefsSoon();
+}
+function fitZoom() {
+  if (selectedImg && prefs.imgCustomZoom && prefs.imgCustomZoom[selectedImg] != null) {
+    delete prefs.imgCustomZoom[selectedImg];
+    if (!Object.keys(prefs.imgCustomZoom).length) delete prefs.imgCustomZoom;
+  } else {
+    prefs.imgFit = true;
+    delete prefs.imgCustomZoom;
+  }
+  syncZoomUI(); layoutImages(); $('#imgScroll').scrollLeft = 0; savePrefsSoon();
+}
 function renderMarkers() {
   const R = state.rows, per = new Map(), lf = state.fields[0];
   let total = 0, shown = 0;
@@ -1733,51 +1943,29 @@ function renderMarkers() {
 }
 /* ---- taggar på bilder (sparas i webbläsaren per bildnamn, som låsningen) ---- */
 const imgTags = n => (prefs.imgTags && prefs.imgTags[n]) || [];
-const imgTagSel = () => new Set(prefs.imgTagFilter || []);
 function setImgTags(n, tags) {
   prefs.imgTags = prefs.imgTags || {};
   if (tags.length) prefs.imgTags[n] = tags; else delete prefs.imgTags[n];
-  savePrefs(); renderImgTags(); applyImgFilter(); scheduleLayout();
+  savePrefs(); renderTagFilter(); renderImgTags(); applyImgFilter(); scheduleLayout();
 }
 function addImgTags(n, text) {
   const add = splitTags(text).filter(t => !imgTags(n).includes(t));
   if (add.length) setImgTags(n, [...imgTags(n), ...add]);
 }
 function renderImgTags() {
-  const names = imageNames(), counts = new Map();
-  for (const n of names) for (const t of imgTags(n)) counts.set(t, (counts.get(t) || 0) + 1);
-  const sel = imgTagSel(), keep = [...sel].filter(t => counts.has(t));
-  if (keep.length !== sel.size) { prefs.imgTagFilter = keep; savePrefs(); }
-  const tags = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'sv'));
-  const all = new Set([...tags]); for (const r of state.rows) for (const t of r.tags) all.add(t);
-  $('#imgtaglist').innerHTML = [...all].sort((a, b) => a.localeCompare(b, 'sv')).map(t => `<option value="${esc(t)}">`).join('');
-  const on = new Set(keep);
-  $('#imgTagFilter').innerHTML = tags.length
-    ? `<span class="lbl" title="Visa bara bilder med någon av de valda taggarna">🏷</span>` +
-      tags.map(t => `<span class="chip${on.has(t) ? ' on' : ''}" data-itf="${esc(t)}" style="--h:${hue(t)}">${esc(t)} <i>${counts.get(t)}</i></span>`).join('') +
-      (on.size ? `<button data-itf-clear title="Visa alla bilder igen">✕</button>` : '')
-    : '';
   for (const c of $('#imgs').querySelectorAll('.imgcard')) {
     const box = c.querySelector('.itags'); if (!box) continue;
     const inp = box.querySelector('.itagin'), focused = inp && document.activeElement === inp, v = inp ? inp.value : '';
-    box.innerHTML = imgTags(c.dataset.img).map(t => `<span class="chip${on.has(t) ? ' on' : ''}" data-itag="${esc(t)}" style="--h:${hue(t)}">${esc(t)}<b class="x" title="Ta bort taggen">×</b></span>`).join('') +
+    box.innerHTML = imgTags(c.dataset.img).map(t => `<span class="chip${ui.tags.has(t) ? ' on' : ''}" data-itag="${esc(t)}" style="--h:${hue(t)}">${esc(t)}<b class="x" title="Ta bort taggen">×</b></span>`).join('') +
       `<input class="itagin" placeholder="+ tagg" list="imgtaglist">`;
     if (focused) { const ni = box.querySelector('.itagin'); ni.value = v; ni.focus(); }
   }
 }
-$('#imgTagFilter').addEventListener('click', e => {
-  if (e.target.closest('[data-itf-clear]')) prefs.imgTagFilter = [];
-  else {
-    const c = e.target.closest('[data-itf]'); if (!c) return;
-    const sel = imgTagSel(), t = c.dataset.itf;
-    if (sel.has(t)) sel.delete(t); else sel.add(t);
-    prefs.imgTagFilter = [...sel];
-  }
-  savePrefs(); renderImgTags(); applyImgFilter();
-});
 $('#imgs').addEventListener('click', e => {
   const x = e.target.closest('.itags .x');
-  if (x) { const n = x.closest('.imgcard').dataset.img, t = x.closest('[data-itag]').dataset.itag; setImgTags(n, imgTags(n).filter(v => v !== t)); }
+  if (x) { const n = x.closest('.imgcard').dataset.img, t = x.closest('[data-itag]').dataset.itag; setImgTags(n, imgTags(n).filter(v => v !== t)); return; }
+  const chipEl = e.target.closest('.itags [data-itag]');
+  if (chipEl) { toggleTagFilter(chipEl.dataset.itag); }
 });
 $('#imgs').addEventListener('keydown', e => {
   const t = e.target; if (!t.matches('input.itagin')) return;
@@ -1791,13 +1979,19 @@ $('#imgs').addEventListener('focusout', e => {
   const n = t.closest('.imgcard').dataset.img, v = t.value; t.value = '';
   setTimeout(() => addImgTags(n, v));
 });
-function applyImgFilter() {       // "Bara bilder med markerad rad" + taggfilter för bilder
+function imgMatchesTags(n) {
+  if (!ui.tags.size) return true;
+  const tags = imgTags(n);
+  const has = t => tags.includes(t);
+  return ui.tagMode === 'all' ? [...ui.tags].every(has) : [...ui.tags].some(has);
+}
+function applyImgFilter() {       // "Bara bilder med markerad rad" + gemensamt taggfilter för bilder
   const on = !!prefs.imgOnlySel, r = on && ui.selected ? state.rows[idxOf(ui.selected)] : null;
-  const set = new Set(r ? r.marks.map(m => m.img) : []), tsel = imgTagSel();
+  const set = new Set(r ? r.marks.map(m => m.img) : []);
   let changed = false;
   for (const c of $('#imgs').querySelectorAll('.imgcard')) {
     const n = c.dataset.img;
-    const h = (!!r && !set.has(n) && !isLocked(n)) || (tsel.size > 0 && !imgTags(n).some(t => tsel.has(t)));
+    const h = (!!r && !set.has(n) && !isLocked(n)) || (ui.tags.size > 0 && !imgMatchesTags(n) && !isLocked(n));
     if (c.hidden !== h) { c.hidden = h; changed = true; }
   }
   if (changed) layoutImages();
@@ -1878,14 +2072,66 @@ const savePrefsSoon = () => { clearTimeout(prefsT); prefsT = setTimeout(savePref
 $('#bZoom').onclick = () => setZoom(1);
 $('#bFit').onclick = fitZoom;
 $('#bExpImg').onclick = exportAllImages;
-$('#imgScroll').addEventListener('wheel', e => {     // Ctrl + scrollhjul = zooma hela bildytan
+
+function setListZoom(z) {
+  prefs.listZoom = clamp(z, 0.5, 2.5);
+  document.documentElement.style.setProperty('--list-zoom', prefs.listZoom);
+  savePrefsSoon();
+}
+
+$('#left').addEventListener('wheel', e => {
   if (!e.ctrlKey) return;
   e.preventDefault();
+  const z = (prefs.listZoom || 1) * Math.exp(-clamp(e.deltaY, -300, 300) * 0.0015);
+  setListZoom(z);
+}, { passive: false });
+
+$('#imgPane').addEventListener('wheel', e => {     // Ctrl + scrollhjul = zooma endast om enskild bild eller bakgrunden är aktiverad via klick
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (!selectedImg && !imgBgActive) {
+    toast('Klicka först på en bild (för att zooma den) eller på bakgrunden i bildytan (för att zooma alla bilder)');
+    return;
+  }
   const sc = $('#imgScroll'), r = sc.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
   const fx = (sc.scrollLeft + mx) / sc.scrollWidth, fy = (sc.scrollTop + my) / sc.scrollHeight;
-  setZoom(zoomLevel() * Math.exp(-clamp(e.deltaY, -300, 300) * 0.0015));
+  const targetName = selectedImg; // null när imgBgActive är true
+  const stepFactor = Math.exp(-clamp(e.deltaY, -300, 300) * 0.0015);
+  if (targetName) {
+    const cEl = $('#imgs').querySelector(`.imgcard[data-img="${CSS.escape(targetName)}"] img`);
+    let baseZ = imgZoomOf(targetName);
+    if (cEl && cEl.naturalWidth && (!prefs.imgCustomZoom || prefs.imgCustomZoom[targetName] == null) && fitOn()) {
+      baseZ = cEl.getBoundingClientRect().width / cEl.naturalWidth;
+    }
+    setZoom(baseZ * stepFactor, targetName);
+  } else {
+    scaleAllZooms(stepFactor);
+    syncZoomUI(); layoutImages(); savePrefsSoon();
+  }
   sc.scrollLeft = fx * sc.scrollWidth - mx; sc.scrollTop = fy * sc.scrollHeight - my;   // zooma kring muspekaren
 }, { passive: false });
+$('#imgScroll').addEventListener('mousedown', e => {
+  if (!e.target.closest('.imgcard')) {
+    setImgZoomTarget('bg');
+  }
+});
+document.addEventListener('mousedown', e => {
+  if ((selectedImg || imgBgActive) && !$('#imgPane').contains(e.target)) {
+    setImgZoomTarget(null);
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && (selectedImg || imgBgActive) && !ui.selected) {
+    setImgZoomTarget(null);
+  }
+});
+$('#imgs').addEventListener('mousedown', e => {
+  const cardEl = e.target.closest('.imgcard');
+  if (cardEl && !e.target.closest('button, input, .chip, .mark') && !placing) {
+    setImgZoomTarget(cardEl.dataset.img);
+  }
+});
 $('#imgs').addEventListener('click', e => {
   const b = e.target.closest('[data-im]'); if (!b) return;
   const name = b.closest('.imgcard').dataset.img, k = images.findIndex(i => i.name === name);
@@ -1909,8 +2155,10 @@ $('#imgs').addEventListener('click', e => {
   } else if (m === 'del') {
     const n = state.rows.reduce((a, r) => a + r.marks.filter(x => x.img === name).length, 0);
     if (!confirm(`Ta bort bilden ”${name}”${n ? ` och dess ${n} markeringar` : ''}?`)) return;
+    if (selectedImg === name) selectImg(null);
+    if (prefs.imgCustomZoom && prefs.imgCustomZoom[name] != null) { delete prefs.imgCustomZoom[name]; savePrefs(); }
     if (k >= 0) { URL.revokeObjectURL(images[k].url); images.splice(k, 1); storeImages(); }
-    if (prefs.imgTags && prefs.imgTags[name]) { delete prefs.imgTags[name]; savePrefs(); }
+    if (prefs.imgTags && prefs.imgTags[name]) { delete prefs.imgTags[name]; savePrefs(); renderTagFilter(); }
     if (n) { mutate(() => state.rows.forEach(r => r.marks = r.marks.filter(x => x.img !== name))); quickSave(); }
     else render();
   }
@@ -2077,7 +2325,7 @@ let toastT;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3200); }
 
 (async function init() {
-  try { Object.assign(prefs, JSON.parse(localStorage.getItem(LS_PREFS)) || {}); } catch {}
+  try { Object.assign(prefs, JSON.parse(localStorage.getItem(LS_PREFS)) || {}); document.documentElement.style.setProperty('--list-zoom', prefs.listZoom || 1); } catch {}
   prefs.indent = prefs.indent || {};
   $('#cbNum').checked = prefs.numbering;
   let b = null;
